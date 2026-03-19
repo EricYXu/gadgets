@@ -2,6 +2,12 @@
 
 A collection of single-file browser tools.
 
+## [Dashboard](index.html)
+
+Central dashboard linking to all gadgets.
+
+Built with Claude: https://claude.ai/share/2008d2bb-65b0-4acd-944d-c6ed9dcaefd5
+
 ## Tools
 
 ### [tab-workspace.html](tab-workspace.html)
