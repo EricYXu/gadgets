@@ -1,0 +1,2270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LC Practice</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #fafafa;
+    --surface: #ffffff;
+    --border: #e8e8e8;
+    --border-light: #f0f0f0;
+    --text: #111111;
+    --text-muted: #999;
+    --text-dim: #ccc;
+    --accent: #1a1a1a;
+    --accent-blue: #2563eb;
+    --green: #16a34a;
+    --red: #dc2626;
+    --orange: #d97706;
+    --easy: #16a34a;
+    --medium: #d97706;
+    --hard: #dc2626;
+    --max-w: 860px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body { height: 100%; overflow: hidden; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── PICKER BAR ── */
+  .picker-bar {
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    flex-shrink: 0;
+    z-index: 10;
+  }
+  .picker-inner {
+    padding: 0 20px;
+    height: 42px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .picker-inner::-webkit-scrollbar { display: none; }
+
+  .filter-tabs { display: flex; gap: 2px; flex-shrink: 0; }
+  .filter-tab {
+    padding: 3px 9px;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-family: inherit;
+    font-size: 10px;
+    cursor: pointer;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    transition: color 0.12s;
+    border-radius: 3px;
+  }
+  .filter-tab.active { color: var(--text); background: var(--border-light); }
+  .filter-tab:hover:not(.active) { color: var(--text); }
+
+  .picker-divider { width: 1px; height: 18px; background: var(--border); flex-shrink: 0; }
+
+  .problem-chips { display: flex; gap: 5px; align-items: center; }
+  .problem-chip {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 9px;
+    border: 1px solid var(--border);
+    background: none;
+    font-family: inherit;
+    font-size: 11px;
+    color: var(--text-muted);
+    cursor: pointer;
+    white-space: nowrap;
+    border-radius: 2px;
+    transition: all 0.12s;
+    flex-shrink: 0;
+  }
+  .problem-chip:hover { border-color: #aaa; color: var(--text); }
+  .problem-chip.active { border-color: var(--text); background: var(--text); color: var(--surface); }
+  .problem-chip.active .chip-dot { background: var(--surface) !important; }
+
+  .chip-num { opacity: 0.45; font-size: 10px; }
+  .chip-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+  .chip-dot.easy { background: var(--easy); }
+  .chip-dot.medium { background: var(--medium); }
+  .chip-dot.hard { background: var(--hard); }
+  .chip-check { font-size: 9px; color: var(--green); }
+  .problem-chip.active .chip-check { color: #aaffaa; }
+
+  .picker-spacer { flex: 1; }
+  .progress-text { color: var(--text-muted); font-size: 10px; flex-shrink: 0; letter-spacing: 0.04em; }
+
+  /* ── MAIN SPLIT ── */
+  .split {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+    min-height: 0;
+  }
+
+  /* ── LEFT COLUMN ── */
+  .pane-left {
+    width: 46%;
+    min-width: 320px;
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* ── LEFT PANE: problem ── */
+  .pane-problem {
+    flex: 1;
+    overflow-y: auto;
+    padding: 28px 32px 24px;
+  }
+  .pane-problem::-webkit-scrollbar { width: 3px; }
+  .pane-problem::-webkit-scrollbar-thumb { background: var(--border); }
+
+  /* ── RIGHT PANE: editor ── */
+  .pane-editor {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-width: 0;
+  }
+
+  /* ── PROBLEM META ROW ── */
+  .prob-meta-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 18px;
+  }
+  .lc-link {
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 10px;
+    letter-spacing: 0.04em;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 1px;
+    transition: all 0.12s;
+    margin-left: auto;
+  }
+  .lc-link:hover { color: var(--accent-blue); border-color: var(--accent-blue); }
+
+  .diff-tag {
+    font-size: 10px;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    padding: 2px 6px;
+    border-radius: 2px;
+  }
+  .diff-tag.easy { color: var(--easy); background: rgba(22,163,74,0.08); }
+  .diff-tag.medium { color: var(--medium); background: rgba(217,119,6,0.08); }
+  .diff-tag.hard { color: var(--hard); background: rgba(220,38,38,0.08); }
+  .tag-pill {
+    font-size: 10px;
+    color: var(--text-muted);
+    background: var(--border-light);
+    padding: 2px 6px;
+    border-radius: 2px;
+  }
+
+  /* ── PROBLEM CONTENT ── */
+  .problem-desc { line-height: 1.75; color: #444; font-size: 13px; }
+  .problem-desc p { margin-bottom: 12px; }
+  .problem-desc strong { color: var(--text); }
+  .problem-desc code { background: var(--border-light); padding: 1px 4px; border-radius: 2px; font-size: 12px; }
+
+  .example-block {
+    margin: 12px 0;
+    background: var(--border-light);
+    padding: 10px 14px;
+    border-left: 2px solid var(--border);
+  }
+  .example-label { font-size: 10px; color: var(--text-muted); margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.08em; }
+  .example-content { color: #555; font-size: 12px; line-height: 1.7; }
+
+  .constraints-block { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--border); }
+  .constraints-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }
+  .constraint { color: #666; font-size: 12px; line-height: 1.9; }
+
+  /* ── EMPTY STATE ── */
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--text-dim);
+    gap: 6px;
+  }
+  .empty-state-main { font-size: 13px; }
+  .empty-state-sub { font-size: 11px; color: var(--text-dim); }
+
+  /* ── EDITOR TOOLBAR ── */
+  .editor-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    height: 40px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    background: var(--surface);
+  }
+  .toolbar-left { display: flex; align-items: center; gap: 8px; }
+  .section-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); }
+
+  .lang-select {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    font-family: inherit;
+    font-size: 11px;
+    padding: 2px 7px;
+    cursor: pointer;
+    outline: none;
+    border-radius: 2px;
+    transition: border-color 0.12s;
+  }
+  .lang-select:focus, .lang-select:hover { border-color: #aaa; }
+  .lang-select option { background: #fff; color: #1a1a1a; }
+
+  .code-actions { display: flex; gap: 5px; }
+  .btn {
+    display: flex; align-items: center; gap: 4px;
+    padding: 4px 12px;
+    font-family: inherit; font-size: 11px; cursor: pointer;
+    border: 1px solid var(--border); background: none;
+    color: var(--text-muted);
+    transition: all 0.12s; letter-spacing: 0.04em; border-radius: 2px;
+  }
+  .btn:hover { border-color: #aaa; color: var(--text); }
+  .btn-primary { background: var(--text); border-color: var(--text); color: #fff; font-weight: 500; }
+  .btn-primary:hover { background: #333; border-color: #333; }
+  .btn-run { color: var(--accent-blue); border-color: rgba(37,99,235,0.25); }
+  .btn-run:hover { background: rgba(37,99,235,0.05); border-color: rgba(37,99,235,0.5); color: var(--accent-blue); }
+
+  /* ── EDITOR AREA ── */
+  .editor-area {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    min-height: 0;
+  }
+
+  .line-nums {
+    position: absolute; left: 0; top: 0; bottom: 0;
+    width: 42px;
+    background: var(--border-light);
+    border-right: 1px solid var(--border);
+    padding: 14px 0;
+    overflow: hidden; pointer-events: none; user-select: none;
+  }
+  .line-num {
+    display: block; text-align: right; padding-right: 9px;
+    color: var(--text-dim); font-size: 11px;
+    height: calc(1.6 * 13px); line-height: calc(1.6 * 13px);
+  }
+
+  textarea.code-editor {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    background: var(--surface);
+    border: none; outline: none; resize: none;
+    color: var(--text); font-family: 'JetBrains Mono', monospace;
+    font-size: 13px; line-height: 1.6;
+    padding: 14px 16px 14px 56px;
+    tab-size: 2; caret-color: var(--accent-blue);
+  }
+
+  /* ── OUTPUT PANEL ── */
+  .output-panel {
+    height: 190px;
+    flex-shrink: 0;
+    border-top: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    background: var(--surface);
+  }
+
+  .output-header {
+    display: flex; align-items: center; gap: 10px;
+    padding: 0 16px; height: 34px;
+    border-bottom: 1px solid var(--border); flex-shrink: 0;
+  }
+  .output-tab {
+    font-size: 10px; color: var(--text-muted); cursor: pointer;
+    letter-spacing: 0.05em; text-transform: uppercase;
+    transition: color 0.12s; padding-bottom: 1px;
+    border-bottom: 1px solid transparent;
+  }
+  .output-tab.active { color: var(--text); border-bottom-color: var(--text); }
+  .output-tab:hover:not(.active) { color: var(--text); }
+
+  .status-badge {
+    margin-left: auto; font-size: 10px; padding: 1px 7px;
+    border-radius: 2px; letter-spacing: 0.06em; text-transform: uppercase;
+    opacity: 0; transition: opacity 0.2s;
+  }
+  .status-badge.visible { opacity: 1; }
+  .status-badge.pass { color: var(--green); background: rgba(22,163,74,0.08); }
+  .status-badge.fail { color: var(--red); background: rgba(220,38,38,0.08); }
+  .status-badge.running { color: var(--orange); background: rgba(217,119,6,0.08); }
+
+  .output-body { flex: 1; overflow-y: auto; padding: 10px 16px; font-size: 12px; }
+  .output-body::-webkit-scrollbar { width: 3px; }
+  .output-body::-webkit-scrollbar-thumb { background: var(--border); }
+  .output-empty { color: var(--text-dim); font-size: 11px; }
+
+  .test-result { margin-bottom: 10px; animation: fadeIn 0.15s ease both; }
+  .test-case-header { display: flex; align-items: center; gap: 7px; margin-bottom: 4px; font-size: 11px; }
+  .tc-icon { font-size: 10px; }
+  .tc-icon.pass { color: var(--green); }
+  .tc-icon.fail { color: var(--red); }
+  .tc-name { color: var(--text-muted); }
+  .tc-time { margin-left: auto; color: var(--text-dim); font-size: 10px; }
+  .tc-detail { background: var(--border-light); padding: 6px 10px; font-size: 11px; line-height: 1.7; border-radius: 2px; }
+  .tc-detail .label { color: var(--text-muted); }
+  .tc-detail .val { color: var(--text); }
+  .tc-detail .val.wrong { color: var(--red); }
+  .tc-detail .val.right { color: var(--green); }
+
+  .error-output {
+    color: var(--red); font-size: 12px; line-height: 1.7; white-space: pre-wrap;
+    background: rgba(220,38,38,0.04); padding: 8px 10px; border-radius: 2px;
+  }
+
+  /* ── PROGRESS TRACKER ── */
+  .tracker-bar {
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+    flex-shrink: 0;
+    padding: 10px 32px 12px;
+  }
+
+  .tracker-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .tracker-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+  }
+  .tracker-count {
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 0.04em;
+  }
+
+  .tally-dots {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .tally-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 1.5px solid var(--border);
+    background: transparent;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    flex-shrink: 0;
+    padding: 0;
+    outline: none;
+  }
+  .tally-dot:hover {
+    border-color: var(--text-muted);
+    transform: scale(1.2);
+  }
+  .tally-dot.filled {
+    background: var(--text);
+    border-color: var(--text);
+  }
+  .tally-dot.filled:hover {
+    background: var(--red);
+    border-color: var(--red);
+    transform: scale(1.15);
+  }
+
+  /* color progression as reviews accumulate */
+  .tally-dot:nth-child(1).filled { background: #d1d5db; border-color: #d1d5db; }
+  .tally-dot:nth-child(2).filled { background: #9ca3af; border-color: #9ca3af; }
+  .tally-dot:nth-child(3).filled { background: #6b7280; border-color: #6b7280; }
+  .tally-dot:nth-child(4).filled { background: #374151; border-color: #374151; }
+  .tally-dot:nth-child(5).filled { background: #111111; border-color: #111111; }
+
+  /* overall progress bar */
+  .overall-progress {
+    padding: 8px 32px 10px;
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+    flex-shrink: 0;
+  }
+  .overall-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+  }
+  .overall-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); }
+  .overall-stats { font-size: 10px; color: var(--text-muted); }
+
+  .progress-track {
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: var(--text);
+    border-radius: 2px;
+    transition: width 0.4s ease;
+  }
+  .progress-segments {
+    display: flex;
+    gap: 2px;
+    margin-top: 5px;
+  }
+  .progress-seg {
+    height: 3px;
+    border-radius: 1px;
+    flex: 1;
+    transition: background 0.3s ease;
+  }
+  .progress-seg.solved { background: var(--green); }
+  .progress-seg.attempted { background: var(--border); background: #d1d5db; }
+  .progress-seg.unseen { background: var(--border-light); }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+  .spinner {
+    display: inline-block; width: 7px; height: 7px;
+    border: 1px solid var(--orange); border-top-color: transparent;
+    border-radius: 50%; animation: spin 0.6s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  ::-webkit-scrollbar { width: 3px; height: 3px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 3px; height: 3px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); }
+
+  /* ── DIFF DOTS for chips ── */
+  .diff-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+  .diff-easy { background: var(--easy); }
+  .diff-medium { background: var(--medium); }
+  .diff-hard { background: var(--hard); }
+  .solved-check { color: var(--green); font-size: 9px; }
+</style>
+</head>
+<body>
+<!-- PICKER BAR -->
+<div class="picker-bar">
+  <div class="picker-inner">
+    <div class="filter-tabs">
+      <button class="filter-tab active" data-filter="all">All</button>
+      <button class="filter-tab" data-filter="easy">Easy</button>
+      <button class="filter-tab" data-filter="medium">Med</button>
+      <button class="filter-tab" data-filter="hard">Hard</button>
+    </div>
+    <div class="picker-divider"></div>
+    <div class="problem-chips" id="problem-chips"></div>
+    <div class="picker-spacer"></div>
+    <span class="progress-text" id="progress-text">0 / 0 solved</span>
+  </div>
+</div>
+
+<!-- SPLIT PANE -->
+<div class="split">
+
+  <!-- LEFT COLUMN -->
+  <div class="pane-left">
+
+    <!-- LEFT: problem description -->
+    <div class="pane-problem" id="pane-problem">
+      <div class="empty-state" id="empty-state">
+        <span class="empty-state-main">← Select a problem</span>
+        <span class="empty-state-sub">Use the bar above to choose</span>
+      </div>
+      <div id="problem-view" style="display:none">
+        <div class="prob-meta-row" id="prob-meta"></div>
+        <div id="prob-body"></div>
+      </div>
+    </div>
+
+    <!-- LEFT FOOTER: tracker + overall progress -->
+    <div id="left-footer" style="display:none; flex-direction:column;">
+      <div class="tracker-bar">
+        <div class="tracker-header">
+          <span class="tracker-label">Reviews</span>
+          <span class="tracker-count" id="tracker-count">0 / 5</span>
+        </div>
+        <div class="tally-dots" id="tally-dots">
+          <button class="tally-dot" data-idx="0" title="Review 1"></button>
+          <button class="tally-dot" data-idx="1" title="Review 2"></button>
+          <button class="tally-dot" data-idx="2" title="Review 3"></button>
+          <button class="tally-dot" data-idx="3" title="Review 4"></button>
+          <button class="tally-dot" data-idx="4" title="Review 5"></button>
+        </div>
+      </div>
+      <div class="overall-progress">
+        <div class="overall-header">
+          <span class="overall-label">Overall Progress</span>
+          <span class="overall-stats" id="overall-stats"></span>
+        </div>
+        <div class="progress-segments" id="progress-segments"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- RIGHT: editor + output -->
+  <div class="pane-editor">
+    <div class="editor-toolbar">
+      <div class="toolbar-left">
+        <span class="section-label">Solution</span>
+        <select class="lang-select" id="lang-select">
+          <option value="javascript">JavaScript</option>
+          <option value="python" selected>Python</option>
+        </select>
+      </div>
+      <div class="code-actions">
+        <button class="btn btn-run" id="btn-run">▶ Run</button>
+        <button class="btn btn-primary" id="btn-submit">Submit</button>
+      </div>
+    </div>
+
+    <div class="editor-area">
+      <div class="line-nums" id="line-nums"></div>
+      <textarea class="code-editor" id="code-editor" spellcheck="false" placeholder="# Select a problem to start"></textarea>
+    </div>
+
+    <div class="output-panel">
+      <div class="output-header">
+        <span class="output-tab active" id="tab-cases" data-tab="cases">Test Cases</span>
+        <span class="output-tab" id="tab-console" data-tab="console">Console</span>
+        <div class="status-badge" id="status-badge"></div>
+      </div>
+      <div class="output-body" id="output-body">
+        <div class="output-empty">Run your code to see results.</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── PROBLEM DATA ──
+const PROBLEMS = [
+  {
+    id: 1, slug: "two-sum", title: "Two Sum", difficulty: "easy",
+    tags: ["Array", "Hash Table"],
+    url: "https://leetcode.com/problems/two-sum/",
+    description: `<p>Given an array of integers <strong>nums</strong> and an integer <strong>target</strong>, return indices of the two numbers such that they add up to target.</p>
+<p>You may assume that each input would have <strong>exactly one solution</strong>, and you may not use the same element twice.</p>`,
+    examples: [
+      { input: "nums = [2,7,11,15], target = 9", output: "[0,1]", explanation: "nums[0] + nums[1] == 9, return [0, 1]." },
+      { input: "nums = [3,2,4], target = 6", output: "[1,2]" },
+    ],
+    constraints: ["2 ≤ nums.length ≤ 10⁴", "-10⁹ ≤ nums[i] ≤ 10⁹", "-10⁹ ≤ target ≤ 10⁹", "Only one valid answer exists."],
+    starterJs: `/**
+ * @param {number[]} nums
+ * @param {number} target
+ * @return {number[]}
+ */
+function twoSum(nums, target) {
+  // your code here
+};`,
+    starterPy: `class Solution:
+    def twoSum(self, nums: list[int], target: int) -> list[int]:
+        # your code here
+        pass`,
+    testCases: [
+      { input: [[2,7,11,15], 9], expected: [0,1], label: "Example 1" },
+      { input: [[3,2,4], 6], expected: [1,2], label: "Example 2" },
+      { input: [[3,3], 6], expected: [0,1], label: "Example 3" },
+    ],
+    runFn: (code, lang) => {
+      if (lang === 'javascript') {
+        const fn = new Function(code + '\nreturn twoSum;')();
+        return (tc) => fn(tc.input[0].slice(), tc.input[1]);
+      } else {
+        return (tc) => pyTwoSum(tc.input[0], tc.input[1], code);
+      }
+    }
+  },
+
+  {
+    id: 20, slug: "valid-parentheses", title: "Valid Parentheses", difficulty: "easy",
+    tags: ["String", "Stack"],
+    url: "https://leetcode.com/problems/valid-parentheses/",
+    description: `<p>Given a string <strong>s</strong> containing just the characters <code>'('</code>, <code>')'</code>, <code>'{'</code>, <code>'}'</code>, <code>'['</code> and <code>']'</code>, determine if the input string is valid.</p>
+<p>An input string is valid if: open brackets are closed by the same type, open brackets are closed in the correct order, and every close bracket has a corresponding open bracket.</p>`,
+    examples: [
+      { input: 's = "()"', output: "true" },
+      { input: 's = "()[]{}"', output: "true" },
+      { input: 's = "(]"', output: "false" },
+    ],
+    constraints: ["1 ≤ s.length ≤ 10⁴", "s consists of parentheses only '()[]{}'"],
+    starterJs: `/**
+ * @param {string} s
+ * @return {boolean}
+ */
+function isValid(s) {
+  // your code here
+};`,
+    starterPy: `class Solution:
+    def isValid(self, s: str) -> bool:
+        # your code here
+        pass`,
+    testCases: [
+      { input: ["()"], expected: true, label: '\"()\"' },
+      { input: ["()[]{}"], expected: true, label: '\"()[]{}\"' },
+      { input: ["(]"], expected: false, label: '\"(]\"' },
+      { input: ["{[]}"], expected: true, label: '\"{[]}\"' },
+    ],
+    runFn: (code, lang) => {
+      if (lang === 'javascript') {
+        const fn = new Function(code + '\nreturn isValid;')();
+        return (tc) => fn(tc.input[0]);
+      }
+    }
+  },
+  {
+    id: 21, slug: "merge-two-sorted-lists", title: "Merge Two Sorted Lists", difficulty: "easy",
+    tags: ["Linked List", "Recursion"],
+    url: "https://leetcode.com/problems/merge-two-sorted-lists/",
+    description: `<p>You are given the heads of two sorted linked lists <strong>list1</strong> and <strong>list2</strong>.</p>
+<p>Merge the two lists into one <strong>sorted</strong> list. The list should be made by splicing together the nodes of the first two lists.</p>
+<p>Return the head of the merged linked list.</p>`,
+    examples: [
+      { input: "list1 = [1,2,4], list2 = [1,3,4]", output: "[1,1,2,3,4,4]" },
+      { input: "list1 = [], list2 = []", output: "[]" },
+      { input: "list1 = [], list2 = [0]", output: "[0]" },
+    ],
+    constraints: ["0 ≤ n, m ≤ 50", "-100 ≤ Node.val ≤ 100", "Both lists are sorted in non-decreasing order."],
+    starterJs: `class ListNode {
+  constructor(val = 0, next = null) { this.val = val; this.next = next; }
+}
+
+/**
+ * @param {ListNode} list1
+ * @param {ListNode} list2
+ * @return {ListNode}
+ */
+function mergeTwoLists(list1, list2) {
+  // your code here
+};`,
+    starterPy: `class Solution:
+    def mergeTwoLists(self, list1, list2):
+        # your code here
+        pass`,
+    testCases: [
+      { input: [[1,2,4],[1,3,4]], expected: [1,1,2,3,4,4], label: "[1,2,4] + [1,3,4]" },
+      { input: [[],[]], expected: [], label: "[] + []" },
+      { input: [[],[0]], expected: [0], label: "[] + [0]" },
+    ],
+    runFn: (code, lang) => {
+      if (lang === 'javascript') {
+        const fullCode = code + `
+function arrToList(arr) {
+  if (!arr.length) return null;
+  let dummy = new ListNode(0), cur = dummy;
+  for (let v of arr) { cur.next = new ListNode(v); cur = cur.next; }
+  return dummy.next;
+}
+function listToArr(node) {
+  let r = [];
+  while (node) { r.push(node.val); node = node.next; }
+  return r;
+}
+return function(tc) {
+  let r = mergeTwoLists(arrToList(tc.input[0]), arrToList(tc.input[1]));
+  return listToArr(r);
+}`;
+        return new Function(fullCode)();
+      }
+    }
+  },
+  {
+    id: 53, slug: "maximum-subarray", title: "Maximum Subarray", difficulty: "medium",
+    tags: ["Array", "Divide and Conquer", "DP"],
+    url: "https://leetcode.com/problems/maximum-subarray/",
+    description: `<p>Given an integer array <strong>nums</strong>, find the subarray with the largest sum, and return its sum.</p>`,
+    examples: [
+      { input: "nums = [-2,1,-3,4,-1,2,1,-5,4]", output: "6", explanation: "The subarray [4,-1,2,1] has the largest sum 6." },
+      { input: "nums = [1]", output: "1" },
+      { input: "nums = [5,4,-1,7,8]", output: "23" },
+    ],
+    constraints: ["1 ≤ nums.length ≤ 10⁵", "-10⁴ ≤ nums[i] ≤ 10⁴"],
+    starterJs: `/**
+ * @param {number[]} nums
+ * @return {number}
+ */
+function maxSubArray(nums) {
+  // your code here
+};`,
+    starterPy: `class Solution:
+    def maxSubArray(self, nums: list[int]) -> int:
+        # your code here
+        pass`,
+    testCases: [
+      { input: [[-2,1,-3,4,-1,2,1,-5,4]], expected: 6, label: "Example 1" },
+      { input: [[1]], expected: 1, label: "Single element" },
+      { input: [[5,4,-1,7,8]], expected: 23, label: "Example 3" },
+    ],
+    runFn: (code, lang) => {
+      if (lang === 'javascript') {
+        const fn = new Function(code + '\nreturn maxSubArray;')();
+        return (tc) => fn(tc.input[0].slice());
+      }
+    }
+  },
+  {
+    id: 200, slug: "number-of-islands", title: "Number of Islands", difficulty: "medium",
+    tags: ["Array", "DFS", "BFS", "Union Find"],
+    url: "https://leetcode.com/problems/number-of-islands/",
+    description: `<p>Given an <strong>m x n</strong> 2D binary grid <strong>grid</strong> which represents a map of <code>'1'</code>s (land) and <code>'0'</code>s (water), return the number of islands.</p>
+<p>An island is surrounded by water and is formed by connecting adjacent lands horizontally or vertically. You may assume all four edges of the grid are surrounded by water.</p>`,
+    examples: [
+      { input: 'grid = [["1","1","1","1","0"],["1","1","0","1","0"],["1","1","0","0","0"],["0","0","0","0","0"]]', output: "1" },
+      { input: 'grid = [["1","1","0","0","0"],["1","1","0","0","0"],["0","0","1","0","0"],["0","0","0","1","1"]]', output: "3" },
+    ],
+    constraints: ["m == grid.length", "n == grid[i].length", "1 ≤ m, n ≤ 300", 'grid[i][j] is "0" or "1"'],
+    starterJs: `/**
+ * @param {character[][]} grid
+ * @return {number}
+ */
+function numIslands(grid) {
+  // your code here
+};`,
+    starterPy: `class Solution:
+    def numIslands(self, grid: list[list[str]]) -> int:
+        # your code here
+        pass`,
+    testCases: [
+      { input: [[["1","1","1","1","0"],["1","1","0","1","0"],["1","1","0","0","0"],["0","0","0","0","0"]]], expected: 1, label: "Single island" },
+      { input: [[["1","1","0","0","0"],["1","1","0","0","0"],["0","0","1","0","0"],["0","0","0","1","1"]]], expected: 3, label: "Three islands" },
+    ],
+    runFn: (code, lang) => {
+      if (lang === 'javascript') {
+        const fn = new Function(code + '\nreturn numIslands;')();
+        return (tc) => fn(tc.input[0].map(r => r.slice()));
+      }
+    }
+  },
+  {
+    id: 42, slug: "trapping-rain-water", title: "Trapping Rain Water", difficulty: "hard",
+    tags: ["Array", "Two Pointers", "DP", "Stack"],
+    url: "https://leetcode.com/problems/trapping-rain-water/",
+    description: `<p>Given <strong>n</strong> non-negative integers representing an elevation map where the width of each bar is 1, compute how much water it can trap after raining.</p>`,
+    examples: [
+      { input: "height = [0,1,0,2,1,0,1,3,2,1,2,1]", output: "6", explanation: "The elevation map traps 6 units of rain water." },
+      { input: "height = [4,2,0,3,2,5]", output: "9" },
+    ],
+    constraints: ["n == height.length", "1 ≤ n ≤ 2 × 10⁴", "0 ≤ height[i] ≤ 10⁵"],
+    starterJs: `/**
+ * @param {number[]} height
+ * @return {number}
+ */
+function trap(height) {
+  // your code here
+};`,
+    starterPy: `class Solution:
+    def trap(self, height: list[int]) -> int:
+        # your code here
+        pass`,
+    testCases: [
+      { input: [[0,1,0,2,1,0,1,3,2,1,2,1]], expected: 6, label: "Example 1" },
+      { input: [[4,2,0,3,2,5]], expected: 9, label: "Example 2" },
+      { input: [[3,0,2,0,4]], expected: 7, label: "Custom" },
+    ],
+    runFn: (code, lang) => {
+      if (lang === 'javascript') {
+        const fn = new Function(code + '\nreturn trap;')();
+        return (tc) => fn(tc.input[0].slice());
+      }
+    }
+  },
+
+  {
+    id: 238, slug: "product-of-array-except-self", title: "Product of Array Except Self", difficulty: "medium",
+    tags: ["Array", "Prefix Sum"],
+    url: "https://leetcode.com/problems/product-of-array-except-self/",
+    description: `<p>Given an integer array <strong>nums</strong>, return an array <strong>answer</strong> such that <code>answer[i]</code> is equal to the product of all the elements of <strong>nums</strong> except <code>nums[i]</code>.</p>
+<p>The product of any prefix or suffix of nums is <strong>guaranteed</strong> to fit in a 32-bit integer. You must write an algorithm that runs in <strong>O(n)</strong> time and without using the division operation.</p>`,
+    examples: [
+      { input: "nums = [1,2,3,4]", output: "[24,12,8,6]" },
+      { input: "nums = [-1,1,0,-3,3]", output: "[0,0,9,0,0]" },
+    ],
+    constraints: ["2 ≤ nums.length ≤ 10⁵", "-30 ≤ nums[i] ≤ 30"],
+    starterJs: `/**
+ * @param {number[]} nums
+ * @return {number[]}
+ */
+function productExceptSelf(nums) {
+  // your code here
+};`,
+    starterPy: `class Solution:
+    def productExceptSelf(self, nums: list[int]) -> list[int]:
+        # your code here
+        pass`,
+    testCases: [
+      { input: [[1,2,3,4]], expected: [24,12,8,6], label: "Example 1" },
+      { input: [[-1,1,0,-3,3]], expected: [0,0,9,0,0], label: "With zero" },
+      { input: [[2,3]], expected: [3,2], label: "Two elements" },
+    ],
+    runFn: (code, lang) => {
+      if (lang === 'javascript') {
+        const fn = new Function(code + '\nreturn productExceptSelf;')();
+        return (tc) => fn(tc.input[0].slice());
+      }
+    }
+  },
+  {
+    id: 155, slug: "min-stack", title: "Min Stack", difficulty: "medium",
+    tags: ["Stack", "Design"],
+    url: "https://leetcode.com/problems/min-stack/",
+    description: `<p>Design a stack that supports push, pop, top, and retrieving the minimum element in constant time.</p>
+<p>Implement the <strong>MinStack</strong> class with: <code>push(val)</code>, <code>pop()</code>, <code>top()</code>, and <code>getMin()</code> — each in <strong>O(1)</strong> time.</p>`,
+    examples: [
+      { input: 'push(-2), push(0), push(-3), getMin(), pop(), top(), getMin()', output: "[-3, 0, -2]" },
+    ],
+    constraints: ["-2³¹ ≤ val ≤ 2³¹ - 1", "pop, top, getMin called on non-empty stack", "At most 3×10⁴ calls total"],
+    starterJs: `class MinStack {
+  constructor() {
+    // your code here
+  }
+  push(val) {
+    // your code here
+  }
+  pop() {
+    // your code here
+  }
+  top() {
+    // your code here
+  }
+  getMin() {
+    // your code here
+  }
+}`,
+    starterPy: `class MinStack:
+    def __init__(self):
+        pass
+    def push(self, val: int) -> None:
+        pass
+    def pop(self) -> None:
+        pass
+    def top(self) -> int:
+        pass
+    def getMin(self) -> int:
+        pass`,
+    testCases: [
+      { input: [["push","push","push","getMin","pop","top","getMin"], [[-2],[0],[-3],[],[],[],[]]], expected: [null,null,null,-3,null,0,-2], label: "Example 1" },
+      { input: [["push","push","getMin","pop","getMin"], [[5],[3],[],[],[]]],  expected: [null,null,3,null,5], label: "Pop min" },
+    ],
+    runFn: (code, lang) => {
+      if (lang === 'javascript') {
+        return (tc) => {
+          const fn = new Function(code + '\nreturn MinStack;')();
+          const stack = new fn();
+          const ops = tc.input[0], args = tc.input[1];
+          return ops.map((op, i) => {
+            if (op === 'push') { stack.push(args[i][0]); return null; }
+            if (op === 'pop') { stack.pop(); return null; }
+            if (op === 'top') return stack.top();
+            if (op === 'getMin') return stack.getMin();
+            return null;
+          });
+        };
+      }
+    }
+  },
+  {
+    id: 207, slug: "course-schedule", title: "Course Schedule", difficulty: "medium",
+    tags: ["DFS", "BFS", "Graph", "Topological Sort"],
+    url: "https://leetcode.com/problems/course-schedule/",
+    description: `<p>There are a total of <strong>numCourses</strong> courses you have to take, labeled from <strong>0</strong> to <strong>numCourses - 1</strong>.</p>
+<p>You are given an array <strong>prerequisites</strong> where <code>prerequisites[i] = [a, b]</code> indicates you must take course <strong>b</strong> first before course <strong>a</strong>.</p>
+<p>Return <strong>true</strong> if you can finish all courses. Otherwise, return <strong>false</strong>.</p>`,
+    examples: [
+      { input: "numCourses = 2, prerequisites = [[1,0]]", output: "true", explanation: "Take course 0 first, then course 1." },
+      { input: "numCourses = 2, prerequisites = [[1,0],[0,1]]", output: "false", explanation: "Cycle: to take 0 you need 1, and to take 1 you need 0." },
+    ],
+    constraints: ["1 ≤ numCourses ≤ 2000", "0 ≤ prerequisites.length ≤ 5000", "No duplicate prerequisites"],
+    starterJs: `/**
+ * @param {number} numCourses
+ * @param {number[][]} prerequisites
+ * @return {boolean}
+ */
+function canFinish(numCourses, prerequisites) {
+  // your code here
+};`,
+    starterPy: `class Solution:
+    def canFinish(self, numCourses: int, prerequisites: list[list[int]]) -> bool:
+        # your code here
+        pass`,
+    testCases: [
+      { input: [2, [[1,0]]], expected: true, label: "Simple" },
+      { input: [2, [[1,0],[0,1]]], expected: false, label: "Cycle" },
+      { input: [5, [[1,0],[2,1],[3,2],[4,3]]], expected: true, label: "Chain" },
+    ],
+    runFn: (code, lang) => {
+      if (lang === 'javascript') {
+        const fn = new Function(code + '\nreturn canFinish;')();
+        return (tc) => fn(tc.input[0], tc.input[1].map(e => e.slice()));
+      }
+    }
+  },
+  {
+    id: 739, slug: "daily-temperatures", title: "Daily Temperatures", difficulty: "medium",
+    tags: ["Array", "Stack", "Monotonic Stack"],
+    url: "https://leetcode.com/problems/daily-temperatures/",
+    description: `<p>Given an array of integers <strong>temperatures</strong> representing the daily temperatures, return an array <strong>answer</strong> such that <code>answer[i]</code> is the number of days you have to wait after the <code>i</code>th day to get a warmer temperature.</p>
+<p>If there is no future day for which this is possible, keep <code>answer[i] == 0</code>.</p>`,
+    examples: [
+      { input: "temperatures = [73,74,75,71,69,72,76,73]", output: "[1,1,4,2,1,1,0,0]" },
+      { input: "temperatures = [30,40,50,60]", output: "[1,1,1,0]" },
+      { input: "temperatures = [30,60,90]", output: "[1,1,0]" },
+    ],
+    constraints: ["1 ≤ temperatures.length ≤ 10⁵", "30 ≤ temperatures[i] ≤ 100"],
+    starterJs: `/**
+ * @param {number[]} temperatures
+ * @return {number[]}
+ */
+function dailyTemperatures(temperatures) {
+  // your code here
+};`,
+    starterPy: `class Solution:
+    def dailyTemperatures(self, temperatures: list[int]) -> list[int]:
+        # your code here
+        pass`,
+    testCases: [
+      { input: [[73,74,75,71,69,72,76,73]], expected: [1,1,4,2,1,1,0,0], label: "Example 1" },
+      { input: [[30,40,50,60]], expected: [1,1,1,0], label: "Ascending" },
+      { input: [[30,60,90]], expected: [1,1,0], label: "Example 3" },
+    ],
+    runFn: (code, lang) => {
+      if (lang === 'javascript') {
+        const fn = new Function(code + '\nreturn dailyTemperatures;')();
+        return (tc) => fn(tc.input[0].slice());
+      }
+    }
+  },
+  {
+    id: 4, slug: "median-of-two-sorted-arrays", title: "Median of Two Sorted Arrays", difficulty: "hard",
+    tags: ["Array", "Binary Search", "Divide and Conquer"],
+    url: "https://leetcode.com/problems/median-of-two-sorted-arrays/",
+    description: `<p>Given two sorted arrays <strong>nums1</strong> and <strong>nums2</strong> of size <strong>m</strong> and <strong>n</strong> respectively, return the median of the two sorted arrays.</p>
+<p>The overall run time complexity should be <strong>O(log(m+n))</strong>.</p>`,
+    examples: [
+      { input: "nums1 = [1,3], nums2 = [2]", output: "2.00000", explanation: "Merged: [1,2,3], median = 2." },
+      { input: "nums1 = [1,2], nums2 = [3,4]", output: "2.50000", explanation: "Merged: [1,2,3,4], median = (2+3)/2 = 2.5." },
+    ],
+    constraints: ["0 ≤ m, n ≤ 1000", "1 ≤ m + n", "-10⁶ ≤ nums1[i], nums2[i] ≤ 10⁶"],
+    starterJs: `/**
+ * @param {number[]} nums1
+ * @param {number[]} nums2
+ * @return {number}
+ */
+function findMedianSortedArrays(nums1, nums2) {
+  // your code here
+};`,
+    starterPy: `class Solution:
+    def findMedianSortedArrays(self, nums1: list[int], nums2: list[int]) -> float:
+        # your code here
+        pass`,
+    testCases: [
+      { input: [[1,3],[2]], expected: 2.0, label: "Odd total" },
+      { input: [[1,2],[3,4]], expected: 2.5, label: "Even total" },
+      { input: [[0,0],[0,0]], expected: 0.0, label: "All zeros" },
+    ],
+    runFn: (code, lang) => {
+      if (lang === 'javascript') {
+        const fn = new Function(code + '\nreturn findMedianSortedArrays;')();
+        return (tc) => fn(tc.input[0].slice(), tc.input[1].slice());
+      }
+    }
+  },
+  {
+    id: 3, slug: "longest-substring-without-repeating-characters", title: "Longest Substring Without Repeating Characters", difficulty: "medium",
+    tags: ["Sliding Window", "Hash Map", "String"],
+    url: "https://leetcode.com/problems/longest-substring-without-repeating-characters/",
+    description: `<p>Given a string <strong>s</strong>, find the length of the longest substring without repeating characters.</p>`,
+    examples: [
+      { input: 's = "abcabcbb"', output: "3", explanation: 'The answer is "abc", with length 3.' },
+      { input: 's = "bbbbb"', output: "1" },
+      { input: 's = "pwwkew"', output: "3", explanation: 'The answer is "wke".' },
+    ],
+    constraints: ["0 ≤ s.length ≤ 5 × 10⁴", "s consists of English letters, digits, symbols, and spaces."],
+    starterJs: `function lengthOfLongestSubstring(s) {\n  // your code here\n};`,
+    starterPy: `class Solution:\n    def lengthOfLongestSubstring(self, s: str) -> int:\n        # your code here\n        pass`,
+    testCases: [
+      { input: ["abcabcbb"], expected: 3, label: '"abcabcbb"' },
+      { input: ["bbbbb"], expected: 1, label: '"bbbbb"' },
+      { input: ["pwwkew"], expected: 3, label: '"pwwkew"' },
+      { input: [""], expected: 0, label: "Empty string" },
+    ],
+    runFn: (code, lang) => { if (lang==='javascript') { const fn=new Function(code+'\nreturn lengthOfLongestSubstring;')(); return (tc)=>fn(tc.input[0]); } }
+  },
+  {
+    id: 76, slug: "minimum-window-substring", title: "Minimum Window Substring", difficulty: "hard",
+    tags: ["Sliding Window", "Hash Map", "String"],
+    url: "https://leetcode.com/problems/minimum-window-substring/",
+    description: `<p>Given two strings <strong>s</strong> and <strong>t</strong>, return the minimum window substring of <strong>s</strong> such that every character in <strong>t</strong> (including duplicates) is included. If no such window exists, return the empty string.</p>`,
+    examples: [
+      { input: 's = "ADOBECODEBANC", t = "ABC"', output: '"BANC"' },
+      { input: 's = "a", t = "a"', output: '"a"' },
+      { input: 's = "a", t = "aa"', output: '""' },
+    ],
+    constraints: ["1 ≤ s.length, t.length ≤ 10⁵"],
+    starterJs: `function minWindow(s, t) {\n  // your code here\n};`,
+    starterPy: `class Solution:\n    def minWindow(self, s: str, t: str) -> str:\n        # your code here\n        pass`,
+    testCases: [
+      { input: ["ADOBECODEBANC", "ABC"], expected: "BANC", label: "Example 1" },
+      { input: ["a", "a"], expected: "a", label: "Single char" },
+      { input: ["a", "aa"], expected: "", label: "Impossible" },
+    ],
+    runFn: (code, lang) => { if (lang==='javascript') { const fn=new Function(code+'\nreturn minWindow;')(); return (tc)=>fn(tc.input[0],tc.input[1]); } }
+  },
+  {
+    id: 15, slug: "3sum", title: "3Sum", difficulty: "medium",
+    tags: ["Array", "Two Pointers", "Sorting"],
+    url: "https://leetcode.com/problems/3sum/",
+    description: `<p>Given an integer array <strong>nums</strong>, return all unique triplets <code>[nums[i], nums[j], nums[k]]</code> such that <code>i != j != k</code> and <code>nums[i] + nums[j] + nums[k] == 0</code>.</p>`,
+    examples: [
+      { input: "nums = [-1,0,1,2,-1,-4]", output: "[[-1,-1,2],[-1,0,1]]" },
+      { input: "nums = [0,1,1]", output: "[]" },
+      { input: "nums = [0,0,0]", output: "[[0,0,0]]" },
+    ],
+    constraints: ["3 ≤ nums.length ≤ 3000", "-10⁵ ≤ nums[i] ≤ 10⁵"],
+    starterJs: `function threeSum(nums) {\n  // your code here\n};`,
+    starterPy: `class Solution:\n    def threeSum(self, nums: list[int]) -> list[list[int]]:\n        # your code here\n        pass`,
+    testCases: [
+      { input: [[-1,0,1,2,-1,-4]], expected: [[-1,-1,2],[-1,0,1]], label: "Example 1" },
+      { input: [[0,1,1]], expected: [], label: "No solution" },
+      { input: [[0,0,0]], expected: [[0,0,0]], label: "All zeros" },
+    ],
+    runFn: (code, lang) => {
+      if (lang==='javascript') {
+        const fn=new Function(code+'\nreturn threeSum;')();
+        return (tc) => { const res=fn(tc.input[0].slice()); return res.map(t=>[...t].sort((a,b)=>a-b)).sort((a,b)=>a[0]-b[0]||a[1]-b[1]); };
+      }
+    }
+  },
+  {
+    id: 11, slug: "container-with-most-water", title: "Container With Most Water", difficulty: "medium",
+    tags: ["Array", "Two Pointers", "Greedy"],
+    url: "https://leetcode.com/problems/container-with-most-water/",
+    description: `<p>Given an integer array <strong>height</strong>, find two lines that form a container holding the most water. Return the maximum amount of water it can store.</p>`,
+    examples: [
+      { input: "height = [1,8,6,2,5,4,8,3,7]", output: "49" },
+      { input: "height = [1,1]", output: "1" },
+    ],
+    constraints: ["2 ≤ n ≤ 10⁵", "0 ≤ height[i] ≤ 10⁴"],
+    starterJs: `function maxArea(height) {\n  // your code here\n};`,
+    starterPy: `class Solution:\n    def maxArea(self, height: list[int]) -> int:\n        # your code here\n        pass`,
+    testCases: [
+      { input: [[1,8,6,2,5,4,8,3,7]], expected: 49, label: "Example 1" },
+      { input: [[1,1]], expected: 1, label: "Two lines" },
+      { input: [[4,3,2,1,4]], expected: 16, label: "Symmetric" },
+    ],
+    runFn: (code, lang) => { if (lang==='javascript') { const fn=new Function(code+'\nreturn maxArea;')(); return (tc)=>fn(tc.input[0].slice()); } }
+  },
+  {
+    id: 33, slug: "search-in-rotated-sorted-array", title: "Search in Rotated Sorted Array", difficulty: "medium",
+    tags: ["Array", "Binary Search"],
+    url: "https://leetcode.com/problems/search-in-rotated-sorted-array/",
+    description: `<p>A sorted integer array has been rotated at an unknown pivot. Given the array and a <strong>target</strong>, return the index of target if found, or <strong>-1</strong>. Must run in <strong>O(log n)</strong>.</p>`,
+    examples: [
+      { input: "nums = [4,5,6,7,0,1,2], target = 0", output: "4" },
+      { input: "nums = [4,5,6,7,0,1,2], target = 3", output: "-1" },
+    ],
+    constraints: ["1 ≤ nums.length ≤ 5000", "All values unique."],
+    starterJs: `function search(nums, target) {\n  // your code here\n};`,
+    starterPy: `class Solution:\n    def search(self, nums: list[int], target: int) -> int:\n        # your code here\n        pass`,
+    testCases: [
+      { input: [[4,5,6,7,0,1,2], 0], expected: 4, label: "Found" },
+      { input: [[4,5,6,7,0,1,2], 3], expected: -1, label: "Not found" },
+      { input: [[1,3], 3], expected: 1, label: "Two elements" },
+    ],
+    runFn: (code, lang) => { if (lang==='javascript') { const fn=new Function(code+'\nreturn search;')(); return (tc)=>fn(tc.input[0].slice(),tc.input[1]); } }
+  },
+  {
+    id: 39, slug: "combination-sum", title: "Combination Sum", difficulty: "medium",
+    tags: ["Array", "Backtracking"],
+    url: "https://leetcode.com/problems/combination-sum/",
+    description: `<p>Given an array of distinct integers <strong>candidates</strong> and a <strong>target</strong>, return all unique combinations that sum to target. The same number may be used unlimited times.</p>`,
+    examples: [
+      { input: "candidates = [2,3,6,7], target = 7", output: "[[2,2,3],[7]]" },
+      { input: "candidates = [2,3,5], target = 8", output: "[[2,2,2,2],[2,3,3],[3,5]]" },
+    ],
+    constraints: ["1 ≤ candidates.length ≤ 30", "2 ≤ candidates[i] ≤ 40", "1 ≤ target ≤ 40"],
+    starterJs: `function combinationSum(candidates, target) {\n  // your code here\n};`,
+    starterPy: `class Solution:\n    def combinationSum(self, candidates: list[int], target: int) -> list[list[int]]:\n        # your code here\n        pass`,
+    testCases: [
+      { input: [[2,3,6,7], 7], expected: [[2,2,3],[7]], label: "Example 1" },
+      { input: [[2,3,5], 8], expected: [[2,2,2,2],[2,3,3],[3,5]], label: "Example 2" },
+    ],
+    runFn: (code, lang) => {
+      if (lang==='javascript') {
+        const fn=new Function(code+'\nreturn combinationSum;')();
+        return (tc) => { const res=fn(tc.input[0].slice(),tc.input[1]); return res.map(a=>[...a].sort((x,y)=>x-y)).sort((a,b)=>a.length-b.length||a[0]-b[0]); };
+      }
+    }
+  },
+  {
+    id: 46, slug: "permutations", title: "Permutations", difficulty: "medium",
+    tags: ["Array", "Backtracking"],
+    url: "https://leetcode.com/problems/permutations/",
+    description: `<p>Given an array <strong>nums</strong> of distinct integers, return all possible permutations in any order.</p>`,
+    examples: [
+      { input: "nums = [1,2,3]", output: "[[1,2,3],[1,3,2],[2,1,3],[2,3,1],[3,1,2],[3,2,1]]" },
+      { input: "nums = [0,1]", output: "[[0,1],[1,0]]" },
+    ],
+    constraints: ["1 ≤ nums.length ≤ 6", "All integers are unique."],
+    starterJs: `function permute(nums) {\n  // your code here\n};`,
+    starterPy: `class Solution:\n    def permute(self, nums: list[int]) -> list[list[int]]:\n        # your code here\n        pass`,
+    testCases: [
+      { input: [[1,2,3]], expected: [[1,2,3],[1,3,2],[2,1,3],[2,3,1],[3,1,2],[3,2,1]], label: "3 elements" },
+      { input: [[0,1]], expected: [[0,1],[1,0]], label: "2 elements" },
+    ],
+    runFn: (code, lang) => {
+      if (lang==='javascript') {
+        const fn=new Function(code+'\nreturn permute;')();
+        return (tc) => fn(tc.input[0].slice()).sort((a,b)=>{ for(let i=0;i<a.length;i++){if(a[i]!==b[i])return a[i]-b[i];} return 0; });
+      }
+    }
+  },
+  {
+    id: 198, slug: "house-robber", title: "House Robber", difficulty: "medium",
+    tags: ["Array", "Dynamic Programming"],
+    url: "https://leetcode.com/problems/house-robber/",
+    description: `<p>You are a robber. Adjacent houses have connected alarms. Given an array <strong>nums</strong>, return the maximum amount you can rob without triggering alarms (no two adjacent houses).</p>`,
+    examples: [
+      { input: "nums = [1,2,3,1]", output: "4" },
+      { input: "nums = [2,7,9,3,1]", output: "12" },
+    ],
+    constraints: ["1 ≤ nums.length ≤ 100", "0 ≤ nums[i] ≤ 400"],
+    starterJs: `function rob(nums) {\n  // your code here\n};`,
+    starterPy: `class Solution:\n    def rob(self, nums: list[int]) -> int:\n        # your code here\n        pass`,
+    testCases: [
+      { input: [[1,2,3,1]], expected: 4, label: "Example 1" },
+      { input: [[2,7,9,3,1]], expected: 12, label: "Example 2" },
+      { input: [[1]], expected: 1, label: "Single house" },
+    ],
+    runFn: (code, lang) => { if (lang==='javascript') { const fn=new Function(code+'\nreturn rob;')(); return (tc)=>fn(tc.input[0].slice()); } }
+  },
+  {
+    id: 322, slug: "coin-change", title: "Coin Change", difficulty: "medium",
+    tags: ["Array", "Dynamic Programming", "BFS"],
+    url: "https://leetcode.com/problems/coin-change/",
+    description: `<p>Given an integer array <strong>coins</strong> and an integer <strong>amount</strong>, return the fewest coins needed to make up that amount. If it cannot be made, return <strong>-1</strong>.</p>`,
+    examples: [
+      { input: "coins = [1,2,5], amount = 11", output: "3", explanation: "11 = 5+5+1." },
+      { input: "coins = [2], amount = 3", output: "-1" },
+    ],
+    constraints: ["1 ≤ coins.length ≤ 12", "0 ≤ amount ≤ 10⁴"],
+    starterJs: `function coinChange(coins, amount) {\n  // your code here\n};`,
+    starterPy: `class Solution:\n    def coinChange(self, coins: list[int], amount: int) -> int:\n        # your code here\n        pass`,
+    testCases: [
+      { input: [[1,2,5], 11], expected: 3, label: "Example 1" },
+      { input: [[2], 3], expected: -1, label: "Impossible" },
+      { input: [[1], 0], expected: 0, label: "Zero amount" },
+    ],
+    runFn: (code, lang) => { if (lang==='javascript') { const fn=new Function(code+'\nreturn coinChange;')(); return (tc)=>fn(tc.input[0].slice(),tc.input[1]); } }
+  },
+  {
+    id: 300, slug: "longest-increasing-subsequence", title: "Longest Increasing Subsequence", difficulty: "medium",
+    tags: ["Array", "Dynamic Programming", "Binary Search"],
+    url: "https://leetcode.com/problems/longest-increasing-subsequence/",
+    description: `<p>Given an integer array <strong>nums</strong>, return the length of the longest strictly increasing subsequence.</p>`,
+    examples: [
+      { input: "nums = [10,9,2,5,3,7,101,18]", output: "4", explanation: "LIS is [2,3,7,101]." },
+      { input: "nums = [7,7,7,7,7]", output: "1" },
+    ],
+    constraints: ["1 ≤ nums.length ≤ 2500", "-10⁴ ≤ nums[i] ≤ 10⁴"],
+    starterJs: `function lengthOfLIS(nums) {\n  // your code here\n};`,
+    starterPy: `class Solution:\n    def lengthOfLIS(self, nums: list[int]) -> int:\n        # your code here\n        pass`,
+    testCases: [
+      { input: [[10,9,2,5,3,7,101,18]], expected: 4, label: "Example 1" },
+      { input: [[0,1,0,3,2,3]], expected: 4, label: "Example 2" },
+      { input: [[7,7,7,7,7]], expected: 1, label: "All same" },
+    ],
+    runFn: (code, lang) => { if (lang==='javascript') { const fn=new Function(code+'\nreturn lengthOfLIS;')(); return (tc)=>fn(tc.input[0].slice()); } }
+  },
+  {
+    id: 1143, slug: "longest-common-subsequence", title: "Longest Common Subsequence", difficulty: "medium",
+    tags: ["String", "Dynamic Programming"],
+    url: "https://leetcode.com/problems/longest-common-subsequence/",
+    description: `<p>Given two strings <strong>text1</strong> and <strong>text2</strong>, return the length of their longest common subsequence. Return <strong>0</strong> if there is none.</p>`,
+    examples: [
+      { input: 'text1 = "abcde", text2 = "ace"', output: "3" },
+      { input: 'text1 = "abc", text2 = "abc"', output: "3" },
+      { input: 'text1 = "abc", text2 = "def"', output: "0" },
+    ],
+    constraints: ["1 ≤ text1.length, text2.length ≤ 1000"],
+    starterJs: `function longestCommonSubsequence(text1, text2) {\n  // your code here\n};`,
+    starterPy: `class Solution:\n    def longestCommonSubsequence(self, text1: str, text2: str) -> int:\n        # your code here\n        pass`,
+    testCases: [
+      { input: ["abcde","ace"], expected: 3, label: "Example 1" },
+      { input: ["abc","abc"], expected: 3, label: "Identical" },
+      { input: ["abc","def"], expected: 0, label: "No common" },
+    ],
+    runFn: (code, lang) => { if (lang==='javascript') { const fn=new Function(code+'\nreturn longestCommonSubsequence;')(); return (tc)=>fn(tc.input[0],tc.input[1]); } }
+  },
+  {
+    id: 102, slug: "binary-tree-level-order-traversal", title: "Binary Tree Level Order Traversal", difficulty: "medium",
+    tags: ["Tree", "BFS"],
+    url: "https://leetcode.com/problems/binary-tree-level-order-traversal/",
+    description: `<p>Given the <strong>root</strong> of a binary tree, return the level order traversal of its nodes' values (left to right, level by level).</p>`,
+    examples: [
+      { input: "root = [3,9,20,null,null,15,7]", output: "[[3],[9,20],[15,7]]" },
+      { input: "root = [1]", output: "[[1]]" },
+    ],
+    constraints: ["0 ≤ Number of nodes ≤ 2000"],
+    starterJs: `class TreeNode{\n  constructor(val=0,left=null,right=null){this.val=val;this.left=left;this.right=right;}\n}\nfunction levelOrder(root) {\n  // your code here\n};`,
+    starterPy: `class Solution:\n    def levelOrder(self, root) -> list[list[int]]:\n        # your code here\n        pass`,
+    testCases: [
+      { input: [[3,9,20,null,null,15,7]], expected: [[3],[9,20],[15,7]], label: "Example 1" },
+      { input: [[1]], expected: [[1]], label: "Single node" },
+      { input: [[]], expected: [], label: "Empty" },
+    ],
+    runFn: (code, lang) => {
+      if (lang==='javascript') {
+        const fullCode = code + `
+function arrToTree(arr){if(!arr||!arr.length)return null;let root=new TreeNode(arr[0]),q=[root],i=1;while(i<arr.length){let node=q.shift();if(i<arr.length&&arr[i]!=null){node.left=new TreeNode(arr[i]);q.push(node.left);}i++;if(i<arr.length&&arr[i]!=null){node.right=new TreeNode(arr[i]);q.push(node.right);}i++;}return root;}
+return function(tc){return levelOrder(arrToTree(tc.input[0]));}`;
+        return new Function(fullCode)();
+      }
+    }
+  },
+  {
+    id: 230, slug: "kth-smallest-element-in-a-bst", title: "Kth Smallest Element in a BST", difficulty: "medium",
+    tags: ["Tree", "DFS", "BST", "In-order Traversal"],
+    url: "https://leetcode.com/problems/kth-smallest-element-in-a-bst/",
+    description: `<p>Given the <strong>root</strong> of a BST and an integer <strong>k</strong>, return the <strong>k</strong>th smallest value (1-indexed).</p>`,
+    examples: [
+      { input: "root = [3,1,4,null,2], k = 1", output: "1" },
+      { input: "root = [5,3,6,2,4,null,null,1], k = 3", output: "3" },
+    ],
+    constraints: ["1 ≤ k ≤ n ≤ 10⁴"],
+    starterJs: `class TreeNode{\n  constructor(val=0,left=null,right=null){this.val=val;this.left=left;this.right=right;}\n}\nfunction kthSmallest(root, k) {\n  // your code here\n};`,
+    starterPy: `class Solution:\n    def kthSmallest(self, root, k: int) -> int:\n        # your code here\n        pass`,
+    testCases: [
+      { input: [[3,1,4,null,2], 1], expected: 1, label: "k=1" },
+      { input: [[5,3,6,2,4,null,null,1], 3], expected: 3, label: "k=3" },
+    ],
+    runFn: (code, lang) => {
+      if (lang==='javascript') {
+        const fullCode = code + `
+function arrToTree(arr){if(!arr||!arr.length)return null;let root=new TreeNode(arr[0]),q=[root],i=1;while(i<arr.length){let node=q.shift();if(i<arr.length&&arr[i]!=null){node.left=new TreeNode(arr[i]);q.push(node.left);}i++;if(i<arr.length&&arr[i]!=null){node.right=new TreeNode(arr[i]);q.push(node.right);}i++;}return root;}
+return function(tc){return kthSmallest(arrToTree(tc.input[0]),tc.input[1]);}`;
+        return new Function(fullCode)();
+      }
+    }
+  },
+
+  {
+    id: 208, slug: "implement-trie-prefix-tree", title: "Implement Trie (Prefix Tree)", difficulty: "medium",
+    tags: ["Trie", "Design", "String"],
+    url: "https://leetcode.com/problems/implement-trie-prefix-tree/",
+    description: `<p>Implement the <strong>Trie</strong> class: <code>insert(word)</code>, <code>search(word)</code> — returns true if the word is in the trie, and <code>startsWith(prefix)</code> — returns true if any inserted word has the prefix.</p>`,
+    examples: [
+      { input: 'insert("apple"), search("apple"), search("app"), startsWith("app"), insert("app"), search("app")', output: "[null,true,false,true,null,true]" },
+    ],
+    constraints: ["1 ≤ word.length ≤ 2000", "Lowercase English letters only.", "At most 3×10⁴ calls."],
+    starterJs: `class Trie {\n  constructor() {\n    // your code here\n  }\n  insert(word) {\n    // your code here\n  }\n  search(word) {\n    // your code here\n  }\n  startsWith(prefix) {\n    // your code here\n  }\n}`,
+    starterPy: `class Trie:\n    def __init__(self):\n        pass\n    def insert(self, word: str) -> None:\n        pass\n    def search(self, word: str) -> bool:\n        pass\n    def startsWith(self, prefix: str) -> bool:\n        pass`,
+    testCases: [
+      { input: [["insert","insert","search","search","startsWith","startsWith"],[["apple"],["app"],["apple"],["app"],["app"],["xyz"]]], expected: [null,null,true,true,true,false], label: "Example 1" },
+      { input: [["insert","search","startsWith"],[["hello"],["hell"],["hel"]]], expected: [null,false,true], label: "Prefix only" },
+    ],
+    runFn: (code, lang) => {
+      if (lang==='javascript') {
+        return (tc) => {
+          const TrieClass=new Function(code+'\nreturn Trie;')();
+          const t=new TrieClass();
+          return tc.input[0].map((op,i)=>{
+            const arg=tc.input[1][i][0];
+            if(op==='insert'){t.insert(arg);return null;}
+            if(op==='search')return t.search(arg);
+            if(op==='startsWith')return t.startsWith(arg);
+            return null;
+          });
+        };
+      }
+    }
+  },
+  {
+    id: 295, slug: "find-median-from-data-stream", title: "Find Median from Data Stream", difficulty: "hard",
+    tags: ["Two Heaps", "Design", "Sorting"],
+    url: "https://leetcode.com/problems/find-median-from-data-stream/",
+    description: `<p>Implement <strong>MedianFinder</strong>: <code>addNum(num)</code> adds an integer, <code>findMedian()</code> returns the median of all added integers in <strong>O(log n)</strong>.</p>`,
+    examples: [
+      { input: "addNum(1), addNum(2), findMedian(), addNum(3), findMedian()", output: "[null,null,1.5,null,2.0]" },
+    ],
+    constraints: ["-10⁵ ≤ num ≤ 10⁵", "At most 5×10⁴ calls."],
+    starterJs: `class MedianFinder {\n  constructor() {\n    // your code here\n  }\n  addNum(num) {\n    // your code here\n  }\n  findMedian() {\n    // your code here\n  }\n}`,
+    starterPy: `class MedianFinder:\n    def __init__(self):\n        pass\n    def addNum(self, num: int) -> None:\n        pass\n    def findMedian(self) -> float:\n        pass`,
+    testCases: [
+      { input: [["addNum","addNum","findMedian","addNum","findMedian"],[[1],[2],[],[3],[]]], expected: [null,null,1.5,null,2.0], label: "Example 1" },
+      { input: [["addNum","addNum","addNum","findMedian"],[[5],[3],[8],[]]],  expected: [null,null,null,5.0], label: "Odd count" },
+    ],
+    runFn: (code, lang) => {
+      if (lang==='javascript') {
+        return (tc) => {
+          const MF=new Function(code+'\nreturn MedianFinder;')();
+          const mf=new MF();
+          return tc.input[0].map((op,i)=>{
+            if(op==='addNum'){mf.addNum(tc.input[1][i][0]);return null;}
+            if(op==='findMedian')return mf.findMedian();
+            return null;
+          });
+        };
+      }
+    }
+  },
+
+  {
+    id: 23, slug: "merge-k-sorted-lists", title: "Merge K Sorted Lists", difficulty: "hard",
+    tags: ["Linked List", "Divide and Conquer", "Heap", "Merge Sort"],
+    url: "https://leetcode.com/problems/merge-k-sorted-lists/",
+    description: `<p>You are given an array of <strong>k</strong> linked-lists, each sorted in ascending order. Merge all into one sorted linked-list and return it.</p>`,
+    examples: [
+      { input: "lists = [[1,4,5],[1,3,4],[2,6]]", output: "[1,1,2,3,4,4,5,6]" },
+      { input: "lists = []", output: "[]" },
+    ],
+    constraints: ["0 ≤ k ≤ 10⁴", "0 ≤ lists[i].length ≤ 500"],
+    starterJs: `class ListNode{\n  constructor(val=0,next=null){this.val=val;this.next=next;}\n}\nfunction mergeKLists(lists) {\n  // your code here\n};`,
+    starterPy: `class Solution:\n    def mergeKLists(self, lists):\n        # your code here\n        pass`,
+    testCases: [
+      { input: [[[1,4,5],[1,3,4],[2,6]]], expected: [1,1,2,3,4,4,5,6], label: "Example 1" },
+      { input: [[[]]], expected: [], label: "Empty list" },
+    ],
+    runFn: (code, lang) => {
+      if (lang==='javascript') {
+        const fullCode = code + `
+function arrToList(arr){if(!arr||!arr.length)return null;let d=new ListNode(0),c=d;for(let v of arr){c.next=new ListNode(v);c=c.next;}return d.next;}
+function listToArr(n){let r=[];while(n){r.push(n.val);n=n.next;}return r;}
+return function(tc){return listToArr(mergeKLists(tc.input[0].map(a=>arrToList(a))));}`;
+        return new Function(fullCode)();
+      }
+    }
+  },
+  // ── 20 NEW PROBLEMS ──
+  {
+    id: 125, slug: "valid-palindrome", title: "Valid Palindrome", difficulty: "easy",
+    tags: ["Two Pointers", "String"],
+    url: "https://leetcode.com/problems/valid-palindrome/",
+    description: `<p>A phrase is a palindrome if, after converting all uppercase letters to lowercase and removing all non-alphanumeric characters, it reads the same forward and backward.</p><p>Given a string <strong>s</strong>, return <strong>true</strong> if it is a palindrome, or <strong>false</strong> otherwise.</p>`,
+    examples: [
+      { input: 's = "A man, a plan, a canal: Panama"', output: "true" },
+      { input: 's = "race a car"', output: "false" },
+    ],
+    constraints: ["1 ≤ s.length ≤ 2×10⁵", "s consists only of printable ASCII characters."],
+    starterJs: `function isPalindrome(s) {\n  // your code here\n};`,
+    starterPy: `class Solution:\n    def isPalindrome(self, s: str) -> bool:\n        # your code here\n        pass`,
+    testCases: [
+      { input: ["A man, a plan, a canal: Panama"], expected: true, label: "Panama" },
+      { input: ["race a car"], expected: false, label: "race a car" },
+      { input: [" "], expected: true, label: "Space" },
+    ],
+    runFn: (code, lang) => { if (lang==='javascript') { const fn=new Function(code+'\nreturn isPalindrome;')(); return tc=>fn(tc.input[0]); } }
+  },
+  {
+    id: 141, slug: "linked-list-cycle", title: "Linked List Cycle", difficulty: "easy",
+    tags: ["Linked List", "Two Pointers", "Fast & Slow Pointers"],
+    url: "https://leetcode.com/problems/linked-list-cycle/",
+    description: `<p>Given <strong>head</strong>, the head of a linked list, determine if the linked list has a cycle in it.</p><p>Return <strong>true</strong> if there is a cycle in the linked list, otherwise return <strong>false</strong>. Use <strong>O(1)</strong> memory (Floyd's algorithm).</p>`,
+    examples: [
+      { input: "head = [3,2,0,-4], pos = 1", output: "true", explanation: "Tail connects to node at index 1." },
+      { input: "head = [1,2], pos = 0", output: "true" },
+      { input: "head = [1], pos = -1", output: "false" },
+    ],
+    constraints: ["0 ≤ n ≤ 10⁴", "-10⁵ ≤ Node.val ≤ 10⁵"],
+    starterJs: `class ListNode{\n  constructor(val){this.val=val;this.next=null;}\n}\nfunction hasCycle(head) {\n  // your code here\n};`,
+    starterPy: `class Solution:\n    def hasCycle(self, head) -> bool:\n        # your code here\n        pass`,
+    testCases: [
+      { input: [[3,2,0,-4], 1], expected: true, label: "Cycle at 1" },
+      { input: [[1,2], 0], expected: true, label: "Cycle at 0" },
+      { input: [[1], -1], expected: false, label: "No cycle" },
+    ],
+    runFn: (code, lang) => {
+      if (lang==='javascript') {
+        const fullCode = code + `
+function buildList(arr, pos) {
+  if (!arr.length) return null;
+  const nodes = arr.map(v => new ListNode(v));
+  for (let i = 0; i < nodes.length - 1; i++) nodes[i].next = nodes[i+1];
+  if (pos >= 0) nodes[nodes.length-1].next = nodes[pos];
+  return nodes[0];
+}
+return tc => hasCycle(buildList(tc.input[0], tc.input[1]));`;
+        return new Function(fullCode)();
+      }
+    }
+  },
+  {
+    id: 19, slug: "remove-nth-node-from-end-of-list", title: "Remove Nth Node From End of List", difficulty: "medium",
+    tags: ["Linked List", "Two Pointers"],
+    url: "https://leetcode.com/problems/remove-nth-node-from-end-of-list/",
+    description: `<p>Given the <strong>head</strong> of a linked list, remove the <strong>n</strong>th node from the end of the list and return its head. Do it in <strong>one pass</strong>.</p>`,
+    examples: [
+      { input: "head = [1,2,3,4,5], n = 2", output: "[1,2,3,5]" },
+      { input: "head = [1], n = 1", output: "[]" },
+      { input: "head = [1,2], n = 1", output: "[1]" },
+    ],
+    constraints: ["1 ≤ sz ≤ 30", "0 ≤ Node.val ≤ 100", "1 ≤ n ≤ sz"],
+    starterJs: `class ListNode{\n  constructor(val=0,next=null){this.val=val;this.next=next;}\n}\nfunction removeNthFromEnd(head, n) {\n  // your code here\n};`,
+    starterPy: `class Solution:\n    def removeNthFromEnd(self, head, n: int):\n        # your code here\n        pass`,
+    testCases: [
+      { input: [[1,2,3,4,5], 2], expected: [1,2,3,5], label: "Remove 2nd from end" },
+      { input: [[1], 1], expected: [], label: "Single node" },
+      { input: [[1,2], 1], expected: [1], label: "Remove last" },
+    ],
+    runFn: (code, lang) => {
+      if (lang==='javascript') {
+        const fullCode = code + `
+function arrToList(a){if(!a.length)return null;let d=new ListNode(0),c=d;for(let v of a){c.next=new ListNode(v);c=c.next;}return d.next;}
+function listToArr(n){let r=[];while(n){r.push(n.val);n=n.next;}return r;}
+return tc=>listToArr(removeNthFromEnd(arrToList(tc.input[0]),tc.input[1]));`;
+        return new Function(fullCode)();
+      }
+    }
+  },
+  {
+    id: 143, slug: "reorder-list", title: "Reorder List", difficulty: "medium",
+    tags: ["Linked List", "Two Pointers", "Stack", "Recursion"],
+    url: "https://leetcode.com/problems/reorder-list/",
+    description: `<p>You are given the head of a singly linked-list: <code>L0 → L1 → … → Ln-1 → Ln</code>.</p><p>Reorder it to: <code>L0 → Ln → L1 → Ln-1 → L2 → Ln-2 → …</code></p><p>You may not modify the values in the list's nodes. Only nodes themselves may be changed.</p>`,
+    examples: [
+      { input: "head = [1,2,3,4]", output: "[1,4,2,3]" },
+      { input: "head = [1,2,3,4,5]", output: "[1,5,2,4,3]" },
+    ],
+    constraints: ["1 ≤ n ≤ 5×10⁴", "1 ≤ Node.val ≤ 1000"],
+    starterJs: `class ListNode{\n  constructor(val=0,next=null){this.val=val;this.next=next;}\n}\nfunction reorderList(head) {\n  // modify in-place, no return needed\n};`,
+    starterPy: `class Solution:\n    def reorderList(self, head) -> None:\n        # modify in-place\n        pass`,
+    testCases: [
+      { input: [[1,2,3,4]], expected: [1,4,2,3], label: "Even length" },
+      { input: [[1,2,3,4,5]], expected: [1,5,2,4,3], label: "Odd length" },
+    ],
+    runFn: (code, lang) => {
+      if (lang==='javascript') {
+        const fullCode = code + `
+function arrToList(a){if(!a.length)return null;let d=new ListNode(0),c=d;for(let v of a){c.next=new ListNode(v);c=c.next;}return d.next;}
+function listToArr(n){let r=[];while(n){r.push(n.val);n=n.next;}return r;}
+return tc=>{let h=arrToList(tc.input[0]);reorderList(h);return listToArr(h);};`;
+        return new Function(fullCode)();
+      }
+    }
+  },
+  {
+    id: 25, slug: "reverse-nodes-in-k-group", title: "Reverse Nodes in k-Group", difficulty: "hard",
+    tags: ["Linked List", "Recursion"],
+    url: "https://leetcode.com/problems/reverse-nodes-in-k-group/",
+    description: `<p>Given the <strong>head</strong> of a linked list, reverse the nodes of the list <strong>k</strong> at a time, and return the modified list.</p><p>If the number of nodes is not a multiple of k, the remaining nodes at the end stay as-is. You may not alter the values in the nodes.</p>`,
+    examples: [
+      { input: "head = [1,2,3,4,5], k = 2", output: "[2,1,4,3,5]" },
+      { input: "head = [1,2,3,4,5], k = 3", output: "[3,2,1,4,5]" },
+    ],
+    constraints: ["1 ≤ n ≤ 5000", "1 ≤ k ≤ n", "0 ≤ Node.val ≤ 1000"],
+    starterJs: `class ListNode{\n  constructor(val=0,next=null){this.val=val;this.next=next;}\n}\nfunction reverseKGroup(head, k) {\n  // your code here\n};`,
+    starterPy: `class Solution:\n    def reverseKGroup(self, head, k: int):\n        # your code here\n        pass`,
+    testCases: [
+      { input: [[1,2,3,4,5], 2], expected: [2,1,4,3,5], label: "k=2" },
+      { input: [[1,2,3,4,5], 3], expected: [3,2,1,4,5], label: "k=3" },
+      { input: [[1,2,3,4,5], 1], expected: [1,2,3,4,5], label: "k=1" },
+    ],
+    runFn: (code, lang) => {
+      if (lang==='javascript') {
+        const fullCode = code + `
+function arrToList(a){if(!a.length)return null;let d=new ListNode(0),c=d;for(let v of a){c.next=new ListNode(v);c=c.next;}return d.next;}
+function listToArr(n){let r=[];while(n){r.push(n.val);n=n.next;}return r;}
+return tc=>listToArr(reverseKGroup(arrToList(tc.input[0]),tc.input[1]));`;
+        return new Function(fullCode)();
+      }
+    }
+  },
+  {
+    id: 78, slug: "subsets", title: "Subsets", difficulty: "medium",
+    tags: ["Array", "Backtracking", "Bit Manipulation"],
+    url: "https://leetcode.com/problems/subsets/",
+    description: `<p>Given an integer array <strong>nums</strong> of unique elements, return all possible subsets (the power set). The solution set must not contain duplicate subsets. Return the solution in any order.</p>`,
+    examples: [
+      { input: "nums = [1,2,3]", output: "[[],[1],[2],[1,2],[3],[1,3],[2,3],[1,2,3]]" },
+      { input: "nums = [0]", output: "[[],[0]]" },
+    ],
+    constraints: ["1 ≤ nums.length ≤ 10", "All elements are unique.", "-10 ≤ nums[i] ≤ 10"],
+    starterJs: `function subsets(nums) {\n  // your code here\n};`,
+    starterPy: `class Solution:\n    def subsets(self, nums: list[int]) -> list[list[int]]:\n        # your code here\n        pass`,
+    testCases: [
+      { input: [[1,2,3]], expected: [[],[1],[1,2],[1,2,3],[1,3],[2],[2,3],[3]], label: "Example 1" },
+      { input: [[0]], expected: [[],[0]], label: "Single element" },
+    ],
+    runFn: (code, lang) => {
+      if (lang==='javascript') {
+        const fn=new Function(code+'\nreturn subsets;')();
+        return tc => fn(tc.input[0].slice()).map(a=>[...a].sort((x,y)=>x-y)).sort((a,b)=>a.length-b.length||String(a)-String(b));
+      }
+    }
+  },
+  {
+    id: 79, slug: "word-search", title: "Word Search", difficulty: "medium",
+    tags: ["Array", "Backtracking", "DFS", "Matrix"],
+    url: "https://leetcode.com/problems/word-search/",
+    description: `<p>Given an <strong>m x n</strong> grid of characters <strong>board</strong> and a string <strong>word</strong>, return <strong>true</strong> if word exists in the grid.</p><p>The word can be constructed from letters of sequentially adjacent cells (horizontally or vertically). The same cell may not be used more than once.</p>`,
+    examples: [
+      { input: 'board = [["A","B","C","E"],["S","F","C","S"],["A","D","E","E"]], word = "ABCCED"', output: "true" },
+      { input: 'board = [["A","B","C","E"],["S","F","C","S"],["A","D","E","E"]], word = "SEE"', output: "true" },
+      { input: 'board = [["A","B","C","E"],["S","F","C","S"],["A","D","E","E"]], word = "ABCB"', output: "false" },
+    ],
+    constraints: ["1 ≤ m, n ≤ 6", "1 ≤ word.length ≤ 15", "board and word consist of only uppercase English letters."],
+    starterJs: `function exist(board, word) {\n  // your code here\n};`,
+    starterPy: `class Solution:\n    def exist(self, board: list[list[str]], word: str) -> bool:\n        # your code here\n        pass`,
+    testCases: [
+      { input: [[["A","B","C","E"],["S","F","C","S"],["A","D","E","E"]], "ABCCED"], expected: true, label: "ABCCED" },
+      { input: [[["A","B","C","E"],["S","F","C","S"],["A","D","E","E"]], "SEE"], expected: true, label: "SEE" },
+      { input: [[["A","B","C","E"],["S","F","C","S"],["A","D","E","E"]], "ABCB"], expected: false, label: "ABCB" },
+    ],
+    runFn: (code, lang) => { if (lang==='javascript') { const fn=new Function(code+'\nreturn exist;')(); return tc=>fn(tc.input[0].map(r=>r.slice()),tc.input[1]); } }
+  },
+  {
+    id: 131, slug: "palindrome-partitioning", title: "Palindrome Partitioning", difficulty: "medium",
+    tags: ["String", "Backtracking", "DP"],
+    url: "https://leetcode.com/problems/palindrome-partitioning/",
+    description: `<p>Given a string <strong>s</strong>, partition <strong>s</strong> such that every substring of the partition is a palindrome. Return all possible palindrome partitioning of <strong>s</strong>.</p>`,
+    examples: [
+      { input: 's = "aab"', output: '[["a","a","b"],["aa","b"]]' },
+      { input: 's = "a"', output: '[["a"]]' },
+    ],
+    constraints: ["1 ≤ s.length ≤ 16", "s consists of only lowercase English letters."],
+    starterJs: `function partition(s) {\n  // your code here\n};`,
+    starterPy: `class Solution:\n    def partition(self, s: str) -> list[list[str]]:\n        # your code here\n        pass`,
+    testCases: [
+      { input: ["aab"], expected: [["a","a","b"],["aa","b"]], label: '"aab"' },
+      { input: ["a"], expected: [["a"]], label: '"a"' },
+    ],
+    runFn: (code, lang) => {
+      if (lang==='javascript') {
+        const fn=new Function(code+'\nreturn partition;')();
+        return tc => fn(tc.input[0]).sort((a,b)=>String(a)-String(b));
+      }
+    }
+  },
+  {
+    id: 213, slug: "house-robber-ii", title: "House Robber II", difficulty: "medium",
+    tags: ["Array", "Dynamic Programming"],
+    url: "https://leetcode.com/problems/house-robber-ii/",
+    description: `<p>All houses at this place are arranged in a <strong>circle</strong>. Each house has a certain amount of money. Adjacent houses have connected alarms — you cannot rob two adjacent houses.</p><p>Given an integer array <strong>nums</strong>, return the maximum amount you can rob tonight.</p>`,
+    examples: [
+      { input: "nums = [2,3,2]", output: "3" },
+      { input: "nums = [1,2,3,1]", output: "4" },
+      { input: "nums = [1,2,3]", output: "3" },
+    ],
+    constraints: ["1 ≤ nums.length ≤ 100", "0 ≤ nums[i] ≤ 1000"],
+    starterJs: `function rob(nums) {\n  // your code here\n};`,
+    starterPy: `class Solution:\n    def rob(self, nums: list[int]) -> int:\n        # your code here\n        pass`,
+    testCases: [
+      { input: [[2,3,2]], expected: 3, label: "Circle 3" },
+      { input: [[1,2,3,1]], expected: 4, label: "Circle 4" },
+      { input: [[1,2,3]], expected: 3, label: "Circle small" },
+    ],
+    runFn: (code, lang) => { if (lang==='javascript') { const fn=new Function(code+'\nreturn rob;')(); return tc=>fn(tc.input[0].slice()); } }
+  },
+  {
+    id: 91, slug: "decode-ways", title: "Decode Ways", difficulty: "medium",
+    tags: ["String", "Dynamic Programming"],
+    url: "https://leetcode.com/problems/decode-ways/",
+    description: `<p>A message containing letters <strong>A–Z</strong> can be encoded into numbers using <code>'A'→1, 'B'→2, …, 'Z'→26</code>.</p><p>Given a string <strong>s</strong> containing only digits, return the number of ways to decode it.</p>`,
+    examples: [
+      { input: 's = "12"', output: "2", explanation: '"12" → AB (1 2) or L (12).' },
+      { input: 's = "226"', output: "3", explanation: '"226" → BZ (2 26), VF (22 6), or BBF (2 2 6).' },
+      { input: 's = "06"', output: "0" },
+    ],
+    constraints: ["1 ≤ s.length ≤ 100", "s contains only digits and may contain leading zeros."],
+    starterJs: `function numDecodings(s) {\n  // your code here\n};`,
+    starterPy: `class Solution:\n    def numDecodings(self, s: str) -> int:\n        # your code here\n        pass`,
+    testCases: [
+      { input: ["12"], expected: 2, label: '"12"' },
+      { input: ["226"], expected: 3, label: '"226"' },
+      { input: ["06"], expected: 0, label: '"06"' },
+      { input: ["11106"], expected: 2, label: '"11106"' },
+    ],
+    runFn: (code, lang) => { if (lang==='javascript') { const fn=new Function(code+'\nreturn numDecodings;')(); return tc=>fn(tc.input[0]); } }
+  },
+  {
+    id: 72, slug: "edit-distance", title: "Edit Distance", difficulty: "medium",
+    tags: ["String", "Dynamic Programming"],
+    url: "https://leetcode.com/problems/edit-distance/",
+    description: `<p>Given two strings <strong>word1</strong> and <strong>word2</strong>, return the minimum number of operations required to convert word1 to word2.</p><p>You have three operations: <strong>insert</strong> a character, <strong>delete</strong> a character, or <strong>replace</strong> a character.</p>`,
+    examples: [
+      { input: 'word1 = "horse", word2 = "ros"', output: "3", explanation: "horse→rorse→rose→ros." },
+      { input: 'word1 = "intention", word2 = "execution"', output: "5" },
+    ],
+    constraints: ["0 ≤ word1.length, word2.length ≤ 500", "Words consist of lowercase English letters."],
+    starterJs: `function minDistance(word1, word2) {\n  // your code here\n};`,
+    starterPy: `class Solution:\n    def minDistance(self, word1: str, word2: str) -> int:\n        # your code here\n        pass`,
+    testCases: [
+      { input: ["horse","ros"], expected: 3, label: "horse→ros" },
+      { input: ["intention","execution"], expected: 5, label: "intention→execution" },
+      { input: ["","a"], expected: 1, label: "empty→a" },
+    ],
+    runFn: (code, lang) => { if (lang==='javascript') { const fn=new Function(code+'\nreturn minDistance;')(); return tc=>fn(tc.input[0],tc.input[1]); } }
+  },
+  {
+    id: 312, slug: "burst-balloons", title: "Burst Balloons", difficulty: "hard",
+    tags: ["Array", "Dynamic Programming", "Divide and Conquer"],
+    url: "https://leetcode.com/problems/burst-balloons/",
+    description: `<p>You are given <strong>n</strong> balloons, indexed from <strong>0</strong> to <strong>n-1</strong>. Each balloon has a number on it represented by <code>nums[i]</code>. You burst all the balloons.</p><p>If you burst the <strong>i</strong>th balloon, you get <code>nums[i-1] * nums[i] * nums[i+1]</code> coins. After bursting, the adjacent balloons become adjacent to each other. Return the maximum coins you can collect by bursting the balloons wisely.</p>`,
+    examples: [
+      { input: "nums = [3,1,5,8]", output: "167", explanation: "[3,1,5,8]→[3,5,8]→[3,8]→[8]→[] → 3×1×5 + 3×5×8 + 1×3×8 + 1×8×1 = 167." },
+      { input: "nums = [1,5]", output: "10" },
+    ],
+    constraints: ["1 ≤ n ≤ 300", "0 ≤ nums[i] ≤ 100"],
+    starterJs: `function maxCoins(nums) {\n  // your code here\n};`,
+    starterPy: `class Solution:\n    def maxCoins(self, nums: list[int]) -> int:\n        # your code here\n        pass`,
+    testCases: [
+      { input: [[3,1,5,8]], expected: 167, label: "Example 1" },
+      { input: [[1,5]], expected: 10, label: "Two balloons" },
+      { input: [[1]], expected: 1, label: "One balloon" },
+    ],
+    runFn: (code, lang) => { if (lang==='javascript') { const fn=new Function(code+'\nreturn maxCoins;')(); return tc=>fn(tc.input[0].slice()); } }
+  },
+  {
+    id: 51, slug: "n-queens", title: "N-Queens", difficulty: "hard",
+    tags: ["Array", "Backtracking"],
+    url: "https://leetcode.com/problems/n-queens/",
+    description: `<p>The <strong>n-queens</strong> puzzle is the problem of placing <strong>n</strong> queens on an <strong>n x n</strong> chessboard such that no two queens attack each other.</p><p>Given an integer <strong>n</strong>, return all distinct solutions to the n-queens puzzle.</p>`,
+    examples: [
+      { input: "n = 4", output: '[[".Q..","...Q","Q...","..Q."],["..Q.","Q...","...Q",".Q.."]]' },
+      { input: "n = 1", output: '[["Q"]]' },
+    ],
+    constraints: ["1 ≤ n ≤ 9"],
+    starterJs: `function solveNQueens(n) {\n  // your code here\n};`,
+    starterPy: `class Solution:\n    def solveNQueens(self, n: int) -> list[list[str]]:\n        # your code here\n        pass`,
+    testCases: [
+      { input: [4], expected: [[".Q..","...Q","Q...","..Q."],["..Q.","Q...","...Q",".Q.."]], label: "n=4" },
+      { input: [1], expected: [["Q"]], label: "n=1" },
+    ],
+    runFn: (code, lang) => {
+      if (lang==='javascript') {
+        const fn=new Function(code+'\nreturn solveNQueens;')();
+        return tc => fn(tc.input[0]).sort((a,b)=>String(a)-String(b));
+      }
+    }
+  },
+  {
+    id: 84, slug: "largest-rectangle-in-histogram", title: "Largest Rectangle in Histogram", difficulty: "hard",
+    tags: ["Array", "Stack", "Monotonic Stack"],
+    url: "https://leetcode.com/problems/largest-rectangle-in-histogram/",
+    description: `<p>Given an array of integers <strong>heights</strong> representing the histogram's bar heights where the width of each bar is 1, return the area of the largest rectangle in the histogram.</p>`,
+    examples: [
+      { input: "heights = [2,1,5,6,2,3]", output: "10" },
+      { input: "heights = [2,4]", output: "4" },
+    ],
+    constraints: ["1 ≤ heights.length ≤ 10⁵", "0 ≤ heights[i] ≤ 10⁴"],
+    starterJs: `function largestRectangleArea(heights) {\n  // your code here\n};`,
+    starterPy: `class Solution:\n    def largestRectangleArea(self, heights: list[int]) -> int:\n        # your code here\n        pass`,
+    testCases: [
+      { input: [[2,1,5,6,2,3]], expected: 10, label: "Example 1" },
+      { input: [[2,4]], expected: 4, label: "Two bars" },
+      { input: [[1]], expected: 1, label: "Single bar" },
+    ],
+    runFn: (code, lang) => { if (lang==='javascript') { const fn=new Function(code+'\nreturn largestRectangleArea;')(); return tc=>fn(tc.input[0].slice()); } }
+  },
+  {
+    id: 347, slug: "top-k-frequent-elements", title: "Top K Frequent Elements", difficulty: "medium",
+    tags: ["Array", "Hash Map", "Heap", "Bucket Sort"],
+    url: "https://leetcode.com/problems/top-k-frequent-elements/",
+    description: `<p>Given an integer array <strong>nums</strong> and an integer <strong>k</strong>, return the <strong>k</strong> most frequent elements. You may return the answer in any order. Must run in better than <strong>O(n log n)</strong>.</p>`,
+    examples: [
+      { input: "nums = [1,1,1,2,2,3], k = 2", output: "[1,2]" },
+      { input: "nums = [1], k = 1", output: "[1]" },
+    ],
+    constraints: ["1 ≤ nums.length ≤ 10⁵", "k is in the range [1, number of unique elements]"],
+    starterJs: `function topKFrequent(nums, k) {\n  // your code here\n};`,
+    starterPy: `class Solution:\n    def topKFrequent(self, nums: list[int], k: int) -> list[int]:\n        # your code here\n        pass`,
+    testCases: [
+      { input: [[1,1,1,2,2,3], 2], expected: [1,2], label: "k=2" },
+      { input: [[1], 1], expected: [1], label: "Single" },
+    ],
+    runFn: (code, lang) => {
+      if (lang==='javascript') {
+        const fn=new Function(code+'\nreturn topKFrequent;')();
+        return tc => [...fn(tc.input[0].slice(), tc.input[1])].sort((a,b)=>a-b);
+      }
+    }
+  },
+  {
+    id: 271, slug: "encode-and-decode-strings", title: "Encode and Decode Strings", difficulty: "medium",
+    tags: ["Array", "String", "Design"],
+    url: "https://leetcode.com/problems/encode-and-decode-strings/",
+    description: `<p>Design an algorithm to encode a list of strings to a single string and decode it back to the original list.</p><p>Implement <code>encode(strs)</code> and <code>decode(s)</code>. There is no restriction on what characters can appear in the strings.</p>`,
+    examples: [
+      { input: 'strs = ["lint","code","love","you"]', output: '["lint","code","love","you"]', explanation: "Encode then decode returns the original." },
+      { input: 'strs = ["we","say",":","yes"]', output: '["we","say",":","yes"]' },
+    ],
+    constraints: ["1 ≤ strs.length ≤ 200", "0 ≤ strs[i].length ≤ 200", "strs[i] contains any possible characters."],
+    starterJs: `function encode(strs) {\n  // your code here\n};\nfunction decode(s) {\n  // your code here\n};`,
+    starterPy: `class Codec:\n    def encode(self, strs: list[str]) -> str:\n        pass\n    def decode(self, s: str) -> list[str]:\n        pass`,
+    testCases: [
+      { input: [["lint","code","love","you"]], expected: ["lint","code","love","you"], label: "Normal strings" },
+      { input: [["we","say",":","yes"]], expected: ["we","say",":","yes"], label: "With special chars" },
+      { input: [["",""]], expected: ["",""], label: "Empty strings" },
+    ],
+    runFn: (code, lang) => { if (lang==='javascript') { const fn=new Function(code+'\nreturn {encode,decode};')(); return tc=>fn.decode(fn.encode(tc.input[0])); } }
+  },
+  {
+    id: 128, slug: "longest-consecutive-sequence", title: "Longest Consecutive Sequence", difficulty: "medium",
+    tags: ["Array", "Hash Set", "Union Find"],
+    url: "https://leetcode.com/problems/longest-consecutive-sequence/",
+    description: `<p>Given an unsorted array of integers <strong>nums</strong>, return the length of the longest consecutive elements sequence.</p><p>You must write an algorithm that runs in <strong>O(n)</strong> time.</p>`,
+    examples: [
+      { input: "nums = [100,4,200,1,3,2]", output: "4", explanation: "Longest: [1,2,3,4]." },
+      { input: "nums = [0,3,7,2,5,8,4,6,0,1]", output: "9" },
+    ],
+    constraints: ["0 ≤ nums.length ≤ 10⁵", "-10⁹ ≤ nums[i] ≤ 10⁹"],
+    starterJs: `function longestConsecutive(nums) {\n  // your code here\n};`,
+    starterPy: `class Solution:\n    def longestConsecutive(self, nums: list[int]) -> int:\n        # your code here\n        pass`,
+    testCases: [
+      { input: [[100,4,200,1,3,2]], expected: 4, label: "Example 1" },
+      { input: [[0,3,7,2,5,8,4,6,0,1]], expected: 9, label: "Example 2" },
+      { input: [[]], expected: 0, label: "Empty" },
+    ],
+    runFn: (code, lang) => { if (lang==='javascript') { const fn=new Function(code+'\nreturn longestConsecutive;')(); return tc=>fn(tc.input[0].slice()); } }
+  },
+  {
+    id: 56, slug: "merge-intervals", title: "Merge Intervals", difficulty: "medium",
+    tags: ["Array", "Sorting", "Intervals"],
+    url: "https://leetcode.com/problems/merge-intervals/",
+    description: `<p>Given an array of <strong>intervals</strong> where <code>intervals[i] = [start_i, end_i]</code>, merge all overlapping intervals, and return an array of the non-overlapping intervals that cover all the intervals in the input.</p>`,
+    examples: [
+      { input: "intervals = [[1,3],[2,6],[8,10],[15,18]]", output: "[[1,6],[8,10],[15,18]]" },
+      { input: "intervals = [[1,4],[4,5]]", output: "[[1,5]]" },
+    ],
+    constraints: ["1 ≤ intervals.length ≤ 10⁴", "0 ≤ start_i ≤ end_i ≤ 10⁴"],
+    starterJs: `function merge(intervals) {\n  // your code here\n};`,
+    starterPy: `class Solution:\n    def merge(self, intervals: list[list[int]]) -> list[list[int]]:\n        # your code here\n        pass`,
+    testCases: [
+      { input: [[[1,3],[2,6],[8,10],[15,18]]], expected: [[1,6],[8,10],[15,18]], label: "Example 1" },
+      { input: [[[1,4],[4,5]]], expected: [[1,5]], label: "Touch" },
+      { input: [[[1,4],[2,3]]], expected: [[1,4]], label: "Contained" },
+    ],
+    runFn: (code, lang) => { if (lang==='javascript') { const fn=new Function(code+'\nreturn merge;')(); return tc=>fn(tc.input[0].map(i=>[...i])); } }
+  },
+  {
+    id: 57, slug: "insert-interval", title: "Insert Interval", difficulty: "medium",
+    tags: ["Array", "Intervals"],
+    url: "https://leetcode.com/problems/insert-interval/",
+    description: `<p>You are given an array of non-overlapping intervals <strong>intervals</strong> sorted in ascending order by start time, and a <strong>newInterval</strong> to insert. Insert it into the correct position and merge any overlapping intervals. Return the resulting array.</p>`,
+    examples: [
+      { input: "intervals = [[1,3],[6,9]], newInterval = [2,5]", output: "[[1,5],[6,9]]" },
+      { input: "intervals = [[1,2],[3,5],[6,7],[8,10],[12,16]], newInterval = [4,8]", output: "[[1,2],[3,10],[12,16]]" },
+    ],
+    constraints: ["0 ≤ intervals.length ≤ 10⁴", "intervals is sorted by start in ascending order."],
+    starterJs: `function insert(intervals, newInterval) {\n  // your code here\n};`,
+    starterPy: `class Solution:\n    def insert(self, intervals: list[list[int]], newInterval: list[int]) -> list[list[int]]:\n        # your code here\n        pass`,
+    testCases: [
+      { input: [[[1,3],[6,9]], [2,5]], expected: [[1,5],[6,9]], label: "Example 1" },
+      { input: [[[1,2],[3,5],[6,7],[8,10],[12,16]], [4,8]], expected: [[1,2],[3,10],[12,16]], label: "Example 2" },
+      { input: [[], [5,7]], expected: [[5,7]], label: "Empty intervals" },
+    ],
+    runFn: (code, lang) => { if (lang==='javascript') { const fn=new Function(code+'\nreturn insert;')(); return tc=>fn(tc.input[0].map(i=>[...i]),tc.input[1].slice()); } }
+  },
+  {
+    id: 435, slug: "non-overlapping-intervals", title: "Non-overlapping Intervals", difficulty: "medium",
+    tags: ["Array", "Sorting", "Greedy", "Intervals"],
+    url: "https://leetcode.com/problems/non-overlapping-intervals/",
+    description: `<p>Given an array of intervals <strong>intervals</strong>, return the minimum number of intervals you need to remove to make the rest of the intervals non-overlapping.</p>`,
+    examples: [
+      { input: "intervals = [[1,2],[2,3],[3,4],[1,3]]", output: "1", explanation: "Remove [1,3]." },
+      { input: "intervals = [[1,2],[1,2],[1,2]]", output: "2" },
+      { input: "intervals = [[1,2],[2,3]]", output: "0" },
+    ],
+    constraints: ["1 ≤ intervals.length ≤ 10⁵", "-5×10⁴ ≤ start_i < end_i ≤ 5×10⁴"],
+    starterJs: `function eraseOverlapIntervals(intervals) {\n  // your code here\n};`,
+    starterPy: `class Solution:\n    def eraseOverlapIntervals(self, intervals: list[list[int]]) -> int:\n        # your code here\n        pass`,
+    testCases: [
+      { input: [[[1,2],[2,3],[3,4],[1,3]]], expected: 1, label: "Example 1" },
+      { input: [[[1,2],[1,2],[1,2]]], expected: 2, label: "All same" },
+      { input: [[[1,2],[2,3]]], expected: 0, label: "No overlap" },
+    ],
+    runFn: (code, lang) => { if (lang==='javascript') { const fn=new Function(code+'\nreturn eraseOverlapIntervals;')(); return tc=>fn(tc.input[0].map(i=>[...i])); } }
+  },
+  {
+    id: 268, slug: "missing-number", title: "Missing Number", difficulty: "easy",
+    tags: ["Array", "Math", "Bit Manipulation"],
+    url: "https://leetcode.com/problems/missing-number/",
+    description: `<p>Given an array <strong>nums</strong> containing <strong>n</strong> distinct numbers in the range <code>[0, n]</code>, return the only number in the range that is missing from the array.</p>`,
+    examples: [
+      { input: "nums = [3,0,1]", output: "2" },
+      { input: "nums = [0,1]", output: "2" },
+      { input: "nums = [9,6,4,2,3,5,7,0,1]", output: "8" },
+    ],
+    constraints: ["n == nums.length", "1 ≤ n ≤ 10⁴", "All nums are distinct."],
+    starterJs: `function missingNumber(nums) {\n  // your code here\n};`,
+    starterPy: `class Solution:\n    def missingNumber(self, nums: list[int]) -> int:\n        # your code here\n        pass`,
+    testCases: [
+      { input: [[3,0,1]], expected: 2, label: "Example 1" },
+      { input: [[0,1]], expected: 2, label: "n=2" },
+      { input: [[9,6,4,2,3,5,7,0,1]], expected: 8, label: "Large" },
+    ],
+    runFn: (code, lang) => { if (lang==='javascript') { const fn=new Function(code+'\nreturn missingNumber;')(); return tc=>fn(tc.input[0].slice()); } }
+  },
+];
+
+// ── STATE ──
+let currentProblem = null;
+let currentLang = 'python';
+let solvedSet = new Set(JSON.parse(localStorage.getItem('lc_solved') || '[]'));
+let codeStore = JSON.parse(localStorage.getItem('lc_code') || '{}');
+let reviewStore = JSON.parse(localStorage.getItem('lc_reviews') || '{}'); // { problemId: count 0-5 }
+let activeFilter = 'all';
+let activeTab = 'cases';
+let consoleLog = [];
+
+// ── INIT ──
+function saveSolved() { localStorage.setItem('lc_solved', JSON.stringify([...solvedSet])); }
+function saveCode() { localStorage.setItem('lc_code', JSON.stringify(codeStore)); }
+function saveReviews() { localStorage.setItem('lc_reviews', JSON.stringify(reviewStore)); }
+
+function getStoreKey(prob, lang) { return `${prob.id}_${lang}`; }
+
+// ── TALLY / REVIEWS ──
+function getReviews(probId) {
+  return reviewStore[probId] || 0;
+}
+
+function setReviews(probId, count) {
+  reviewStore[probId] = count;
+  saveReviews();
+}
+
+function renderTally(probId) {
+  const count = getReviews(probId);
+  const dots = document.querySelectorAll('.tally-dot');
+  dots.forEach((dot, i) => {
+    dot.classList.toggle('filled', i < count);
+    dot.title = i < count ? `Click to remove review ${i + 1}` : `Mark as reviewed ${i + 1}x`;
+  });
+  document.getElementById('tracker-count').textContent = `${count} / 5`;
+}
+
+function renderOverallProgress() {
+  const total = PROBLEMS.length;
+  const solved = solvedSet.size;
+  const reviewed = PROBLEMS.filter(p => getReviews(p.id) > 0).length;
+  document.getElementById('overall-stats').textContent = `${solved} solved · ${reviewed} reviewed`;
+
+  const seg = document.getElementById('progress-segments');
+  seg.innerHTML = PROBLEMS.map(p => {
+    const isSolved = solvedSet.has(p.id);
+    const rev = getReviews(p.id);
+    let cls = 'unseen';
+    if (isSolved) cls = 'solved';
+    else if (rev > 0) cls = 'attempted';
+    return `<span class="progress-seg ${cls}" title="${p.id}. ${p.title}"></span>`;
+  }).join('');
+}
+
+// Wire tally dot clicks
+document.querySelectorAll('.tally-dot').forEach(dot => {
+  dot.addEventListener('click', function() {
+    if (!currentProblem) return;
+    const idx = parseInt(this.dataset.idx);
+    const current = getReviews(currentProblem.id);
+    // clicking a filled dot at the current max removes it; clicking unfilled adds up to it
+    const newCount = (current === idx + 1) ? idx : idx + 1;
+    setReviews(currentProblem.id, newCount);
+    renderTally(currentProblem.id);
+    renderOverallProgress();
+    buildProblemList(); // refresh chips (in case we want to show review indicators)
+  });
+});
+
+function buildProblemList() {
+  const chips = document.getElementById('problem-chips');
+  chips.innerHTML = '';
+  const filtered = activeFilter === 'all' ? PROBLEMS : PROBLEMS.filter(p => p.difficulty === activeFilter);
+  filtered.forEach(p => {
+    const chip = document.createElement('button');
+    const isActive = currentProblem?.id === p.id;
+    const isSolved = solvedSet.has(p.id);
+    chip.className = 'problem-chip' + (isActive ? ' active' : '') + (isSolved ? ' solved' : '');
+    chip.innerHTML = `
+      <span class="chip-num">${p.id}</span>
+      <span>${p.title}</span>
+      <span class="chip-dot ${p.difficulty}"></span>
+      ${isSolved ? '<span class="chip-check">✓</span>' : ''}
+    `;
+    chip.addEventListener('click', () => selectProblem(p));
+    chips.appendChild(chip);
+  });
+  updateProgress();
+}
+
+function updateProgress() {
+  document.getElementById('progress-text').textContent = `${solvedSet.size} / ${PROBLEMS.length} solved`;
+}
+
+function selectProblem(p) {
+  if (currentProblem) {
+    const key = getStoreKey(currentProblem, currentLang);
+    codeStore[key] = document.getElementById('code-editor').value;
+    saveCode();
+  }
+
+  currentProblem = p;
+
+  // Show problem view, hide empty state
+  document.getElementById('empty-state').style.display = 'none';
+  document.getElementById('problem-view').style.display = 'block';
+  const footer = document.getElementById('left-footer');
+  footer.style.display = 'flex';
+
+  // tally + overall progress
+  renderTally(p.id);
+  renderOverallProgress();
+
+  // meta row: diff tag + tags + lc link
+  const meta = document.getElementById('prob-meta');
+  meta.innerHTML =
+    `<span class="diff-tag ${p.difficulty}">${p.difficulty}</span>` +
+    p.tags.map(t => `<span class="tag-pill">${t}</span>`).join('') +
+    `<a class="lc-link" href="${p.url}" target="_blank">#${p.id} ↗</a>`;
+
+  // body
+  let body = `<div class="problem-desc">${p.description}`;
+  p.examples.forEach((ex, i) => {
+    body += `<div class="example-block">
+      <div class="example-label">Example ${i+1}</div>
+      <div class="example-content">
+        <div><span style="color:var(--text-muted)">Input: </span>${ex.input}</div>
+        <div><span style="color:var(--text-muted)">Output: </span>${ex.output}</div>
+        ${ex.explanation ? `<div><span style="color:var(--text-muted)">Explanation: </span>${ex.explanation}</div>` : ''}
+      </div>
+    </div>`;
+  });
+  body += `<div class="constraints-block">
+    <div class="constraints-label">Constraints</div>
+    ${p.constraints.map(c => `<div class="constraint">• ${c}</div>`).join('')}
+  </div></div>`;
+  document.getElementById('prob-body').innerHTML = body;
+
+  // code
+  const key = getStoreKey(p, currentLang);
+  const saved = codeStore[key];
+  const editor = document.getElementById('code-editor');
+  editor.value = saved || (currentLang === 'javascript' ? p.starterJs : p.starterPy);
+  updateLineNums();
+  clearOutput();
+  buildProblemList();
+}
+
+// ── EDITOR ──
+const editor = document.getElementById('code-editor');
+
+editor.addEventListener('input', updateLineNums);
+editor.addEventListener('scroll', syncLineScroll);
+editor.addEventListener('keydown', e => {
+  const s = editor.selectionStart;
+  const end = editor.selectionEnd;
+  const val = editor.value;
+  const INDENT = '  '; // 2 spaces
+
+  // ── TAB: indent / dedent ──
+  if (e.key === 'Tab') {
+    e.preventDefault();
+    if (s === end) {
+      // No selection — insert indent at cursor
+      editor.value = val.substring(0, s) + INDENT + val.substring(end);
+      editor.selectionStart = editor.selectionEnd = s + INDENT.length;
+    } else {
+      // Selection — indent or dedent each selected line
+      const lineStart = val.lastIndexOf('\n', s - 1) + 1;
+      const lineEnd = val.indexOf('\n', end - 1);
+      const block = val.substring(lineStart, lineEnd === -1 ? val.length : lineEnd);
+      const lines = block.split('\n');
+      const modified = e.shiftKey
+        ? lines.map(l => l.startsWith(INDENT) ? l.slice(INDENT.length) : l.startsWith(' ') ? l.slice(1) : l)
+        : lines.map(l => INDENT + l);
+      const newBlock = modified.join('\n');
+      editor.value = val.substring(0, lineStart) + newBlock + val.substring(lineEnd === -1 ? val.length : lineEnd);
+      editor.selectionStart = lineStart;
+      editor.selectionEnd = lineStart + newBlock.length;
+    }
+    updateLineNums();
+    return;
+  }
+
+  // ── ENTER: auto-indent ──
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    const lineStart = val.lastIndexOf('\n', s - 1) + 1;
+    const currentLine = val.substring(lineStart, s);
+    // Grab leading whitespace of current line
+    const leadingSpace = currentLine.match(/^(\s*)/)[1];
+    // Check if line ends with a block-opener (Python colon or JS brace)
+    const trimmed = currentLine.trimEnd();
+    const opensBlock = trimmed.endsWith(':') || trimmed.endsWith('{') || trimmed.endsWith('(');
+    const extraIndent = opensBlock ? INDENT : '';
+    const insert = '\n' + leadingSpace + extraIndent;
+    editor.value = val.substring(0, s) + insert + val.substring(end);
+    editor.selectionStart = editor.selectionEnd = s + insert.length;
+    updateLineNums();
+    syncLineScroll();
+    return;
+  }
+
+  // ── BACKSPACE: remove whole indent block ──
+  if (e.key === 'Backspace' && s === end && s > 0) {
+    const lineStart = val.lastIndexOf('\n', s - 1) + 1;
+    const beforeCursor = val.substring(lineStart, s);
+    // If everything before cursor on this line is spaces, delete one indent worth
+    if (beforeCursor.length > 0 && beforeCursor.trim() === '') {
+      e.preventDefault();
+      const toRemove = beforeCursor.length % INDENT.length === 0 ? INDENT.length : beforeCursor.length % INDENT.length;
+      editor.value = val.substring(0, s - toRemove) + val.substring(s);
+      editor.selectionStart = editor.selectionEnd = s - toRemove;
+      updateLineNums();
+      return;
+    }
+  }
+
+  // ── AUTO-CLOSE brackets & quotes ──
+  const pairs = { '(': ')', '[': ']', '{': '}', '"': '"', "'": "'" };
+  const closers = new Set([')', ']', '}']);
+  if (pairs[e.key]) {
+    const nextChar = val[s];
+    // Skip auto-close for quotes if cursor is already before the same char
+    if ((e.key === '"' || e.key === "'") && nextChar === e.key) {
+      e.preventDefault();
+      editor.selectionStart = editor.selectionEnd = s + 1;
+      return;
+    }
+    e.preventDefault();
+    const close = pairs[e.key];
+    editor.value = val.substring(0, s) + e.key + close + val.substring(end);
+    editor.selectionStart = editor.selectionEnd = s + 1;
+    updateLineNums();
+    return;
+  }
+  // Skip over existing closing bracket if typed manually
+  if (closers.has(e.key) && val[s] === e.key) {
+    e.preventDefault();
+    editor.selectionStart = editor.selectionEnd = s + 1;
+    return;
+  }
+});
+
+function updateLineNums() {
+  const lines = editor.value.split('\n').length;
+  const container = document.getElementById('line-nums');
+  let html = '';
+  for (let i = 1; i <= Math.max(lines, 1); i++) {
+    html += `<span class="line-num">${i}</span>`;
+  }
+  container.innerHTML = html;
+}
+
+function syncLineScroll() {
+  document.getElementById('line-nums').scrollTop = editor.scrollTop;
+}
+
+updateLineNums();
+
+// ── LANG SELECT ──
+document.getElementById('lang-select').addEventListener('change', function() {
+  if (currentProblem) {
+    const oldKey = getStoreKey(currentProblem, currentLang);
+    codeStore[oldKey] = editor.value;
+    saveCode();
+  }
+  currentLang = this.value;
+  if (currentProblem) {
+    const key = getStoreKey(currentProblem, currentLang);
+    editor.value = codeStore[key] || (currentLang === 'javascript' ? currentProblem.starterJs : currentProblem.starterPy);
+    updateLineNums();
+  }
+});
+
+// ── FILTERS ──
+document.querySelectorAll('.filter-tab').forEach(tab => {
+  tab.addEventListener('click', function() {
+    document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+    this.classList.add('active');
+    activeFilter = this.dataset.filter;
+    buildProblemList();
+  });
+});
+
+// ── OUTPUT TABS ──
+document.querySelectorAll('.output-tab').forEach(tab => {
+  tab.addEventListener('click', function() {
+    document.querySelectorAll('.output-tab').forEach(t => t.classList.remove('active'));
+    this.classList.add('active');
+    activeTab = this.dataset.tab;
+    if (activeTab === 'console') renderConsole();
+  });
+});
+
+// ── RUN / SUBMIT ──
+function clearOutput() {
+  const badge = document.getElementById('status-badge');
+  badge.className = 'status-badge';
+  document.getElementById('output-body').innerHTML = '<div class="output-empty">Run your code to see results.</div>';
+  consoleLog = [];
+}
+
+function setStatus(state, text) {
+  const badge = document.getElementById('status-badge');
+  badge.className = `status-badge visible ${state}`;
+  badge.textContent = text;
+}
+
+function equal(a, b) {
+  if (Array.isArray(a) && Array.isArray(b)) {
+    if (a.length !== b.length) return false;
+    return a.every((v, i) => equal(v, b[i]));
+  }
+  return a === b;
+}
+
+function fmt(v) {
+  if (v === null) return 'null';
+  if (Array.isArray(v)) return '[' + v.map(fmt).join(', ') + ']';
+  return String(v);
+}
+
+async function runTests(submitMode) {
+  if (!currentProblem) return;
+
+  setStatus('running', submitMode ? 'Judging...' : 'Running...');
+  document.getElementById('output-body').innerHTML = `<div class="output-empty"><span class="spinner"></span> &nbsp;Executing...</div>`;
+
+  await new Promise(r => setTimeout(r, 300));
+
+  const code = editor.value;
+  consoleLog = [];
+
+  // capture console.log
+  const origLog = console.log;
+  console.log = (...args) => { consoleLog.push(args.map(String).join(' ')); origLog(...args); };
+
+  let results = [];
+  let globalError = null;
+
+  try {
+    if (currentLang !== 'javascript') {
+      globalError = "Python execution is not supported in the browser.\nUse the JavaScript version to test your solution.";
+    } else {
+      const runCase = currentProblem.runFn(code, currentLang);
+      for (const tc of currentProblem.testCases) {
+        let got, err = null, t0 = performance.now();
+        try { got = runCase(tc); } catch(e) { err = e.message; }
+        const ms = (performance.now() - t0).toFixed(1);
+        const pass = err ? false : equal(got, tc.expected);
+        results.push({ tc, got, err, pass, ms });
+      }
+    }
+  } catch(e) {
+    globalError = e.message;
+  }
+
+  console.log = origLog;
+
+  // render
+  if (globalError) {
+    setStatus('fail', 'Error');
+    document.getElementById('output-body').innerHTML =
+      `<div class="error-output">Runtime Error:\n${globalError}</div>`;
+    return;
+  }
+
+  const allPass = results.every(r => r.pass);
+  if (allPass && submitMode) {
+    solvedSet.add(currentProblem.id);
+    saveSolved();
+    buildProblemList(); // rebuilds chips
+  }
+
+  setStatus(allPass ? 'pass' : 'fail', allPass ? (submitMode ? 'Accepted' : 'All Pass') : 'Wrong Answer');
+
+  if (activeTab === 'console') {
+    renderConsole();
+  } else {
+    renderResults(results);
+  }
+}
+
+function renderResults(results) {
+  const body = document.getElementById('output-body');
+  if (!results.length) { body.innerHTML = '<div class="output-empty">No test cases.</div>'; return; }
+
+  body.innerHTML = results.map((r, i) => `
+    <div class="test-result" style="animation-delay:${i*0.05}s">
+      <div class="test-case-header">
+        <span class="tc-icon ${r.pass ? 'pass' : 'fail'}">${r.pass ? '✓' : '✗'}</span>
+        <span class="tc-name">${r.tc.label}</span>
+        <span class="tc-time">${r.ms}ms</span>
+      </div>
+      <div class="tc-detail">
+        <div><span class="label">Input: </span><span class="val">${r.tc.input.map(fmt).join(', ')}</span></div>
+        <div><span class="label">Expected: </span><span class="val right">${fmt(r.tc.expected)}</span></div>
+        <div><span class="label">Got: </span><span class="val ${r.pass ? 'right' : 'wrong'}">${r.err ? '⚠ ' + r.err : fmt(r.got)}</span></div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderConsole() {
+  const body = document.getElementById('output-body');
+  if (!consoleLog.length) {
+    body.innerHTML = '<div class="output-empty">No console output.</div>';
+  } else {
+    body.innerHTML = `<div class="error-output" style="color:var(--text)">${consoleLog.map(l => '> ' + l).join('\n')}</div>`;
+  }
+}
+
+document.getElementById('btn-run').addEventListener('click', () => runTests(false));
+document.getElementById('btn-submit').addEventListener('click', () => runTests(true));
+
+// ── KEYBOARD SHORTCUTS ──
+document.addEventListener('keydown', e => {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+    e.preventDefault();
+    runTests(false);
+  }
+  if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'Enter') {
+    e.preventDefault();
+    runTests(true);
+  }
+});
+
+// ── BOOT ──
+buildProblemList();
+renderOverallProgress();
+</script>
+</body>
+</html>

@@ -64,6 +64,34 @@
   }
   .status-weather:hover { color: var(--ink); }
 
+
+  /* ── Top-left Bible verse ── */
+  .verse-bar {
+    position: fixed;
+    top: 1.5rem;
+    left: 1.75rem;
+    max-width: 260px;
+    animation: fadeUp 0.5s ease both;
+    z-index: 10;
+  }
+
+  .verse-text {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.63rem;
+    color: var(--muted);
+    line-height: 1.65;
+    letter-spacing: 0.02em;
+  }
+
+  .verse-ref {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.6rem;
+    color: var(--accent);
+    margin-top: 0.3rem;
+    letter-spacing: 0.06em;
+    font-weight: 400;
+  }
+
   /* ── Location popover ── */
   .loc-popover {
     display: none;
@@ -254,6 +282,12 @@
   <div class="status-weather" id="weather" title="Click to set location">set location ↗</div>
 </div>
 
+<div class="verse-bar">
+  <div class="verse-text" id="verseText"></div>
+  <div class="verse-ref" id="verseRef"></div>
+</div>
+
+
 <div class="loc-popover" id="locPopover">
   <div class="loc-label">Location</div>
   <div class="loc-row">
@@ -271,15 +305,21 @@
 
 <div class="grid">
 
-  <a class="tile" href="tab-workspace.html">
-    <div class="tile-label">Tab Workspace</div>
-    <div class="tile-desc">A canvas-based workspace with draggable, tabbed panels. Open multiple browser tabs side-by-side in a free-form layout.</div>
+  <a class="tile" href="pdf-reader.html" target="_blank">
+    <div class="tile-label">PDF Reader</div>
+    <div class="tile-desc">Open and read PDF files directly in the browser.</div>
     <div class="arrow">↗</div>
   </a>
 
-  <a class="tile" href="pdf-reader.html">
-    <div class="tile-label">PDF Reader</div>
-    <div class="tile-desc">A browser-based PDF reader.</div>
+  <a class="tile" href="tab-workspace.html" target="_blank">
+    <div class="tile-label">Tab Workspace</div>
+    <div class="tile-desc">Manage multiple tabs and workspaces in one view.</div>
+    <div class="arrow">↗</div>
+  </a>
+
+  <a class="tile" href="leetcode.html" target="_blank">
+    <div class="tile-label">Leetcode</div>
+    <div class="tile-desc">Practice and track coding problems and solutions.</div>
     <div class="arrow">↗</div>
   </a>
 
@@ -493,6 +533,83 @@
     fetchWeather(loc.lat, loc.lon);
     setTimeout(() => popover.classList.remove('open'), 800);
   });
+
+  /* ── Daily Bible verse ── */
+  const VERSES = [
+    ["For God so loved the world that he gave his one and only Son, that whoever believes in him shall not perish but have eternal life.", "John 3:16"],
+    ["The Lord is my shepherd, I lack nothing.", "Psalm 23:1"],
+    ["I can do all this through him who gives me strength.", "Philippians 4:13"],
+    ["Trust in the Lord with all your heart and lean not on your own understanding.", "Proverbs 3:5"],
+    ["Be strong and courageous. Do not be afraid; do not be discouraged, for the Lord your God will be with you wherever you go.", "Joshua 1:9"],
+    ["And we know that in all things God works for the good of those who love him.", "Romans 8:28"],
+    ["The Lord is my light and my salvation — whom shall I fear?", "Psalm 27:1"],
+    ["Come to me, all you who are weary and burdened, and I will give you rest.", "Matthew 11:28"],
+    ["For I know the plans I have for you, declares the Lord, plans to prosper you and not to harm you.", "Jeremiah 29:11"],
+    ["Be still, and know that I am God.", "Psalm 46:10"],
+    ["Do not be anxious about anything, but in every situation, by prayer and petition, with thanksgiving, present your requests to God.", "Philippians 4:6"],
+    ["The Lord your God is with you, the Mighty Warrior who saves.", "Zephaniah 3:17"],
+    ["Love is patient, love is kind. It does not envy, it does not boast, it is not proud.", "1 Corinthians 13:4"],
+    ["In the beginning God created the heavens and the earth.", "Genesis 1:1"],
+    ["Your word is a lamp for my feet, a light on my path.", "Psalm 119:105"],
+    ["But those who hope in the Lord will renew their strength.", "Isaiah 40:31"],
+    ["The heart of man plans his way, but the Lord establishes his steps.", "Proverbs 16:9"],
+    ["Give thanks to the Lord, for he is good; his love endures forever.", "Psalm 107:1"],
+    ["Jesus wept.", "John 11:35"],
+    ["Ask and it will be given to you; seek and you will find.", "Matthew 7:7"],
+    ["Do to others as you would have them do to you.", "Luke 6:31"],
+    ["Fear not, for I am with you; be not dismayed, for I am your God.", "Isaiah 41:10"],
+    ["Create in me a pure heart, O God, and renew a steadfast spirit within me.", "Psalm 51:10"],
+    ["For by grace you have been saved through faith.", "Ephesians 2:8"],
+    ["Rejoice in the Lord always. I will say it again: Rejoice!", "Philippians 4:4"],
+    ["The Lord bless you and keep you; the Lord make his face shine on you.", "Numbers 6:24–25"],
+    ["Delight yourself in the Lord and he will give you the desires of your heart.", "Psalm 37:4"],
+    ["For the word of God is alive and active, sharper than any double-edged sword.", "Hebrews 4:12"],
+    ["No temptation has overtaken you except what is common to mankind.", "1 Corinthians 10:13"],
+    ["I am the way and the truth and the life.", "John 14:6"],
+    ["Seek first his kingdom and his righteousness, and all these things will be given to you.", "Matthew 6:33"],
+    ["Cast all your anxiety on him because he cares for you.", "1 Peter 5:7"],
+    ["The name of the Lord is a fortified tower; the righteous run to it and are safe.", "Proverbs 18:10"],
+    ["Let your light shine before others, that they may see your good deeds.", "Matthew 5:16"],
+    ["God is our refuge and strength, an ever-present help in trouble.", "Psalm 46:1"],
+    ["Humble yourselves before the Lord, and he will lift you up.", "James 4:10"],
+    ["My grace is sufficient for you, for my power is made perfect in weakness.", "2 Corinthians 12:9"],
+    ["The Lord is close to the brokenhearted and saves those who are crushed in spirit.", "Psalm 34:18"],
+    ["Now faith is confidence in what we hope for and assurance about what we do not see.", "Hebrews 11:1"],
+    ["I have been crucified with Christ and I no longer live, but Christ lives in me.", "Galatians 2:20"],
+    ["This is the day the Lord has made; let us rejoice and be glad in it.", "Psalm 118:24"],
+    ["He has made everything beautiful in its time.", "Ecclesiastes 3:11"],
+    ["And the peace of God, which transcends all understanding, will guard your hearts and your minds.", "Philippians 4:7"],
+    ["Love the Lord your God with all your heart and with all your soul and with all your mind.", "Matthew 22:37"],
+    ["The steadfast love of the Lord never ceases; his mercies never come to an end.", "Lamentations 3:22"],
+    ["Do not conform to the pattern of this world, but be transformed by the renewing of your mind.", "Romans 12:2"],
+    ["So do not fear, for I am with you; do not be dismayed, for I am your God.", "Isaiah 41:10"],
+    ["The Lord is good to all; he has compassion on all he has made.", "Psalm 145:9"],
+    ["Blessed are the pure in heart, for they will see God.", "Matthew 5:8"],
+    ["Let us not become weary in doing good, for at the proper time we will reap a harvest.", "Galatians 6:9"],
+    ["Where can I go from your Spirit? Where can I flee from your presence?", "Psalm 139:7"],
+    ["If God is for us, who can be against us?", "Romans 8:31"],
+    ["I will praise you, Lord my God, with all my heart.", "Psalm 86:12"],
+    ["The fear of the Lord is the beginning of wisdom.", "Proverbs 9:10"],
+    ["But God demonstrates his own love for us in this: while we were still sinners, Christ died for us.", "Romans 5:8"],
+    ["He gives strength to the weary and increases the power of the weak.", "Isaiah 40:29"],
+    ["For God did not give us a spirit of timidity, but a spirit of power, of love and of self-discipline.", "2 Timothy 1:7"],
+    ["I praise you because I am fearfully and wonderfully made.", "Psalm 139:14"],
+    ["The Lord will fight for you; you need only to be still.", "Exodus 14:14"],
+    ["Everyone who calls on the name of the Lord will be saved.", "Romans 10:13"],
+    ["Be kind and compassionate to one another, forgiving each other, just as in Christ God forgave you.", "Ephesians 4:32"],
+    ["The Lord has done it this very day; let us rejoice today and be glad.", "Psalm 118:24"],
+    ["Greater love has no one than this: to lay down one's life for one's friends.", "John 15:13"],
+    ["You will keep in perfect peace those whose minds are steadfast, because they trust in you.", "Isaiah 26:3"],
+  ];
+
+  function loadVerse() {
+    const today = new Date();
+    const dayOfYear = Math.floor((today - new Date(today.getFullYear(), 0, 0)) / 86400000);
+    const verse = VERSES[dayOfYear % VERSES.length];
+    document.getElementById('verseText').textContent = verse[0];
+    document.getElementById('verseRef').textContent = verse[1];
+  }
+  loadVerse();
 </script>
 
 </body>
