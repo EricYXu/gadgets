@@ -1,0 +1,1195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PDF Reader</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=DM+Mono:wght@300;400;500&display=swap');
+
+  :root {
+    --ink: #111318;
+    --paper: #ffffff;
+    --paper-dark: #f0f2f5;
+    --cream: #f8f9fb;
+    --accent: #2563eb;
+    --accent-light: #3b82f6;
+    --accent-muted: rgba(37,99,235,0.12);
+    --danger: #dc2626;
+    --panel: #ffffff;
+    --panel-mid: #f3f4f6;
+    --panel-light: #e5e7eb;
+    --viewer-bg: #d1d5db;
+    --text-light: #9ca3af;
+    --text-mid: #6b7280;
+    --text-strong: #374151;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Mono', monospace;
+    background: var(--panel-mid);
+    color: var(--ink);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* ── TOPBAR ── */
+  #topbar {
+    background: var(--panel);
+    border-bottom: 1px solid var(--panel-light);
+    height: 48px;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    gap: 12px;
+    flex-shrink: 0;
+    z-index: 100;
+  }
+
+  .divider { width: 1px; height: 24px; background: var(--panel-light); }
+
+  #file-btn {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    padding: 5px 14px;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background 0.15s;
+  }
+  #file-btn:hover { background: var(--accent-light); }
+  #file-input { display: none; }
+
+  .page-controls {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: auto;
+  }
+
+  .ctrl-btn {
+    background: var(--panel-mid);
+    border: 1px solid var(--panel-light);
+    color: var(--text-mid);
+    width: 28px; height: 28px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+  }
+  .ctrl-btn:hover { background: var(--panel-light); color: var(--ink); }
+  .ctrl-btn:disabled { opacity: 0.35; cursor: default; }
+
+  #page-info {
+    font-size: 11px;
+    color: var(--text-mid);
+    min-width: 80px;
+    text-align: center;
+  }
+
+  .zoom-controls { display: flex; align-items: center; gap: 6px; }
+
+  #zoom-display {
+    font-size: 11px;
+    color: var(--text-mid);
+    min-width: 40px;
+    text-align: center;
+  }
+
+  /* ── MAIN LAYOUT ── */
+  #main {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* ── PDF VIEWER ── */
+  #viewer-wrap {
+    flex: 1;
+    overflow: auto;
+    background: var(--viewer-bg);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* DROP ZONE */
+  #drop-zone {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    z-index: 10;
+    transition: all 0.2s;
+  }
+
+  #drop-zone.hidden { display: none; }
+
+  #drop-zone.drag-over .drop-card {
+    border-color: var(--accent);
+    background: var(--accent-muted);
+    transform: scale(1.02);
+  }
+
+  .drop-card {
+    border: 2px dashed var(--panel-light);
+    border-radius: 10px;
+    padding: 56px 72px;
+    text-align: center;
+    transition: all 0.2s;
+    cursor: pointer;
+    background: rgba(255,255,255,0.7);
+  }
+
+  .drop-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    opacity: 0.5;
+  }
+
+  .drop-title {
+    font-size: 18px;
+    font-weight: 500;
+    color: var(--text-strong);
+    margin-bottom: 8px;
+    letter-spacing: -0.01em;
+  }
+
+  .drop-sub {
+    font-size: 11px;
+    color: var(--text-light);
+    letter-spacing: 0.04em;
+  }
+
+  /* PDF CANVAS CONTAINER */
+  #canvas-container {
+    padding: 32px 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    min-height: 100%;
+    position: relative;
+  }
+
+  .page-wrapper {
+    position: relative;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.18);
+    margin-bottom: 24px;
+    background: white;
+  }
+
+  .page-wrapper canvas {
+    display: block;
+  }
+
+  /* ── TEXT LAYER (PDF.js) ── */
+  .textLayer {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    line-height: 1;
+    pointer-events: auto;
+  }
+
+  .textLayer span,
+  .textLayer br {
+    color: transparent;
+    position: absolute;
+    white-space: pre;
+    cursor: text;
+    transform-origin: 0% 0%;
+  }
+
+  .textLayer ::selection {
+    background: rgba(37, 99, 235, 0.3);
+    color: transparent;
+  }
+
+  /* Annotation layer sits above text layer */
+  .annotation-layer {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  .highlight-rect {
+    position: absolute;
+    pointer-events: all;
+    cursor: pointer;
+    border-radius: 1px;
+    transition: opacity 0.15s;
+  }
+
+  .highlight-rect:hover { opacity: 0.7; }
+
+  .page-wrapper canvas { display: block; cursor: default; }
+
+  /* ── RIGHT PANEL ── */
+  #right-panel {
+    width: 320px;
+    flex-shrink: 0;
+    background: var(--panel);
+    border-left: 1px solid var(--panel-light);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .panel-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--panel-light);
+    flex-shrink: 0;
+  }
+
+  .tab-btn {
+    flex: 1;
+    padding: 12px 8px;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--text-light);
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-transform: uppercase;
+  }
+
+  .tab-btn.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+
+  .tab-btn:hover:not(.active) { color: var(--text-strong); }
+
+  .tab-panel { display: none; flex-direction: column; flex: 1; overflow: hidden; }
+  .tab-panel.active { display: flex; }
+
+  /* ── NOTES TAB ── */
+  #notes-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .note-card {
+    background: var(--panel-mid);
+    border: 1px solid var(--panel-light);
+    border-radius: 6px;
+    padding: 10px 12px;
+    position: relative;
+    animation: slideIn 0.2s ease;
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(-6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .note-page {
+    font-size: 9px;
+    color: var(--accent);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 5px;
+  }
+
+  .note-quote {
+    font-family: 'Libre Baskerville', serif;
+    font-style: italic;
+    font-size: 11px;
+    color: var(--text-mid);
+    margin-bottom: 6px;
+    padding-left: 8px;
+    border-left: 2px solid var(--panel-light);
+    line-height: 1.5;
+  }
+
+  .note-text {
+    font-size: 11px;
+    color: var(--text-strong);
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  .note-delete {
+    position: absolute;
+    top: 8px; right: 8px;
+    background: none;
+    border: none;
+    color: var(--text-light);
+    cursor: pointer;
+    font-size: 12px;
+    padding: 2px 4px;
+    border-radius: 3px;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+  .note-card:hover .note-delete { opacity: 1; }
+  .note-delete:hover { color: var(--danger); }
+
+  .notes-empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-light);
+    font-size: 11px;
+    line-height: 1.7;
+  }
+
+  #note-input-area {
+    border-top: 1px solid var(--panel-light);
+    padding: 12px;
+    flex-shrink: 0;
+  }
+
+  #note-selected-text {
+    font-family: 'Libre Baskerville', serif;
+    font-style: italic;
+    font-size: 11px;
+    color: var(--text-mid);
+    margin-bottom: 8px;
+    padding: 6px 8px;
+    background: var(--panel-mid);
+    border-left: 2px solid var(--accent);
+    border-radius: 0 3px 3px 0;
+    line-height: 1.5;
+    display: none;
+  }
+
+  #note-textarea {
+    width: 100%;
+    background: var(--panel-mid);
+    border: 1px solid var(--panel-light);
+    border-radius: 4px;
+    padding: 8px 10px;
+    color: var(--ink);
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    resize: none;
+    height: 72px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  #note-textarea:focus { border-color: var(--accent); }
+  #note-textarea::placeholder { color: var(--text-light); }
+
+  #add-note-btn {
+    margin-top: 8px;
+    width: 100%;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    padding: 8px;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background 0.15s;
+  }
+  #add-note-btn:hover { background: var(--accent-light); }
+
+  /* ── HIGHLIGHTS TAB ── */
+  .highlight-tools {
+    padding: 12px;
+    border-bottom: 1px solid var(--panel-light);
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-shrink: 0;
+  }
+
+  .hl-tool-label {
+    font-size: 10px;
+    color: var(--text-light);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-right: 4px;
+  }
+
+  .hl-color {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .hl-color.active { border-color: var(--ink); transform: scale(1.15); }
+  .hl-color[data-color="yellow"] { background: rgba(255, 220, 80, 0.8); }
+  .hl-color[data-color="blue"] { background: rgba(80, 160, 220, 0.8); }
+  .hl-color[data-color="green"] { background: rgba(80, 200, 120, 0.8); }
+
+  #clear-highlights {
+    margin-left: auto;
+    background: none;
+    border: 1px solid var(--panel-light);
+    color: var(--text-light);
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    padding: 4px 8px;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  #clear-highlights:hover { color: var(--danger); border-color: var(--danger); }
+
+  #highlights-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .hl-card {
+    background: var(--panel-mid);
+    border-radius: 4px;
+    padding: 8px 10px;
+    border-left: 3px solid;
+    font-family: 'Libre Baskerville', serif;
+    font-style: italic;
+    font-size: 11px;
+    color: var(--text-mid);
+    line-height: 1.5;
+    position: relative;
+    cursor: pointer;
+    transition: background 0.15s;
+    animation: slideIn 0.2s ease;
+  }
+  .hl-card:hover { background: var(--panel-light); }
+  .hl-card[data-color="yellow"] { border-left-color: #f59e0b; }
+  .hl-card[data-color="blue"] { border-left-color: #3b82f6; }
+  .hl-card[data-color="green"] { border-left-color: #22c55e; }
+
+  .hl-page {
+    font-family: 'DM Mono', monospace;
+    font-style: normal;
+    font-size: 9px;
+    color: var(--text-light);
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  .highlights-empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-light);
+    font-size: 11px;
+    line-height: 1.7;
+  }
+
+  /* ── DICTIONARY TAB ── */
+  #dict-panel {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  .dict-search {
+    padding: 12px;
+    border-bottom: 1px solid var(--panel-light);
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  #dict-input {
+    flex: 1;
+    background: var(--panel-mid);
+    border: 1px solid var(--panel-light);
+    border-radius: 4px;
+    padding: 7px 10px;
+    color: var(--ink);
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  #dict-input:focus { border-color: var(--accent); }
+  #dict-input::placeholder { color: var(--text-light); }
+
+  #dict-search-btn {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    padding: 7px 12px;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background 0.15s;
+  }
+  #dict-search-btn:hover { background: var(--accent-light); }
+
+  #dict-result {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+  }
+
+  .dict-word {
+    font-family: 'Libre Baskerville', serif;
+    font-size: 22px;
+    color: var(--ink);
+    margin-bottom: 4px;
+  }
+
+  .dict-phonetic {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--accent);
+    margin-bottom: 12px;
+  }
+
+  .dict-pos {
+    font-size: 10px;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 6px;
+    margin-top: 12px;
+  }
+
+  .dict-def {
+    font-family: 'Libre Baskerville', serif;
+    font-size: 12px;
+    color: var(--text-strong);
+    line-height: 1.6;
+    margin-bottom: 6px;
+    padding-left: 12px;
+    border-left: 1px solid var(--panel-light);
+  }
+
+  .dict-example {
+    font-family: 'Libre Baskerville', serif;
+    font-style: italic;
+    font-size: 11px;
+    color: var(--text-light);
+    margin-left: 12px;
+    margin-top: 4px;
+    padding-left: 8px;
+    border-left: 2px solid var(--panel-light);
+    line-height: 1.5;
+  }
+
+  .dict-empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-light);
+    font-size: 11px;
+    line-height: 1.7;
+  }
+
+  .dict-loading {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--accent);
+    font-size: 11px;
+  }
+
+  .dict-error {
+    padding: 16px;
+    background: rgba(220,38,38,0.06);
+    border: 1px solid rgba(220,38,38,0.2);
+    border-radius: 4px;
+    font-size: 11px;
+    color: #b91c1c;
+    text-align: center;
+  }
+
+  /* ── CONTEXT MENU ── */
+  #context-menu {
+    position: fixed;
+    background: var(--panel);
+    border: 1px solid var(--panel-light);
+    border-radius: 8px;
+    padding: 6px;
+    z-index: 1000;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    display: none;
+    min-width: 160px;
+    animation: menuIn 0.12s ease;
+  }
+
+  @keyframes menuIn {
+    from { opacity: 0; transform: scale(0.96) translateY(-4px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+  }
+
+  .ctx-item {
+    padding: 7px 12px;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--text-strong);
+    cursor: pointer;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.1s;
+  }
+  .ctx-item:hover { background: var(--panel-mid); color: var(--ink); }
+  .ctx-item .ctx-icon { font-size: 13px; }
+
+  .ctx-sep { height: 1px; background: var(--panel-light); margin: 4px 0; }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--panel-light); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text-light); }
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div id="topbar">
+  <button id="file-btn" onclick="document.getElementById('file-input').click()">Open PDF</button>
+  <input type="file" id="file-input" accept=".pdf">
+
+  <div class="page-controls">
+    <button class="ctrl-btn" id="prev-page" title="Previous page" disabled>‹</button>
+    <span id="page-info">— / —</span>
+    <button class="ctrl-btn" id="next-page" title="Next page" disabled>›</button>
+    <div class="divider"></div>
+    <div class="zoom-controls">
+      <button class="ctrl-btn" id="zoom-out" title="Zoom out" disabled>−</button>
+      <span id="zoom-display">100%</span>
+      <button class="ctrl-btn" id="zoom-in" title="Zoom in" disabled>+</button>
+      <button class="ctrl-btn" id="zoom-fit" title="Fit width" disabled style="width:auto;padding:0 6px;font-size:9px;">FIT</button>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div id="main">
+
+  <!-- VIEWER -->
+  <div id="viewer-wrap" id="viewer-drop">
+
+    <!-- DROP ZONE -->
+    <div id="drop-zone">
+      <div class="drop-card" onclick="document.getElementById('file-input').click()">
+        <div class="drop-icon">📄</div>
+        <div class="drop-title">Drop a PDF here</div>
+        <div class="drop-sub">or click to browse your files</div>
+      </div>
+    </div>
+
+    <!-- CANVAS -->
+    <div id="canvas-container"></div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div id="right-panel">
+    <div class="panel-tabs">
+      <button class="tab-btn active" data-tab="notes">Notes</button>
+      <button class="tab-btn" data-tab="highlights">Marks</button>
+      <button class="tab-btn" data-tab="dictionary">Dictionary</button>
+    </div>
+
+    <!-- NOTES -->
+    <div class="tab-panel active" id="tab-notes">
+      <div id="notes-list">
+        <div class="notes-empty">No notes yet.<br>Select text in the PDF,<br>then add a note below.</div>
+      </div>
+      <div id="note-input-area">
+        <div id="note-selected-text"></div>
+        <textarea id="note-textarea" placeholder="Write a note…"></textarea>
+        <button id="add-note-btn">Add Note</button>
+      </div>
+    </div>
+
+    <!-- HIGHLIGHTS -->
+    <div class="tab-panel" id="tab-highlights">
+      <div class="highlight-tools">
+        <span class="hl-tool-label">Color</span>
+        <div class="hl-color active" data-color="yellow" title="Yellow" onclick="selectColor('yellow')"></div>
+        <div class="hl-color" data-color="blue" title="Blue" onclick="selectColor('blue')"></div>
+        <div class="hl-color" data-color="green" title="Green" onclick="selectColor('green')"></div>
+        <button id="clear-highlights" onclick="clearAllHighlights()">Clear all</button>
+      </div>
+      <div id="highlights-list">
+        <div class="highlights-empty">No highlights yet.<br>Select text and choose<br>"Highlight" from the menu.</div>
+      </div>
+    </div>
+
+    <!-- DICTIONARY -->
+    <div class="tab-panel" id="tab-dictionary">
+      <div class="dict-search">
+        <input type="text" id="dict-input" placeholder="Look up a word…" onkeydown="if(event.key==='Enter')lookupWord()">
+        <button id="dict-search-btn" onclick="lookupWord()">Look up</button>
+      </div>
+      <div id="dict-result">
+        <div class="dict-empty">Select a word in the PDF<br>or type one above<br>to see its definition.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CONTEXT MENU -->
+<div id="context-menu">
+  <div class="ctx-item" onclick="ctxHighlight()"><span class="ctx-icon">🖊</span> Highlight</div>
+  <div class="ctx-item" onclick="ctxNote()"><span class="ctx-icon">📝</span> Add Note</div>
+  <div class="ctx-sep"></div>
+  <div class="ctx-item" onclick="ctxDefine()"><span class="ctx-icon">📖</span> Define</div>
+  <div class="ctx-item" onclick="ctxCopy()"><span class="ctx-icon">⎘</span> Copy</div>
+</div>
+
+<script>
+// PDF.js setup
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+let pdfDoc = null;
+let currentPage = 1;
+let totalPages = 0;
+let scale = 1.4;
+let renderedPages = new Set();
+let selectedText = '';
+let selectedColor = 'yellow';
+let notes = [];
+let highlights = [];
+let selectedPageNum = null;
+
+// ── FILE HANDLING ──
+document.getElementById('file-input').addEventListener('change', e => {
+  if (e.target.files[0]) loadPDF(e.target.files[0]);
+});
+
+const viewerWrap = document.getElementById('viewer-wrap');
+viewerWrap.addEventListener('dragover', e => {
+  e.preventDefault();
+  document.getElementById('drop-zone').classList.add('drag-over');
+});
+viewerWrap.addEventListener('dragleave', () => {
+  document.getElementById('drop-zone').classList.remove('drag-over');
+});
+viewerWrap.addEventListener('drop', e => {
+  e.preventDefault();
+  document.getElementById('drop-zone').classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file && file.type === 'application/pdf') loadPDF(file);
+});
+
+async function loadPDF(file) {
+  const arrayBuffer = await file.arrayBuffer();
+  pdfDoc = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  totalPages = pdfDoc.numPages;
+  currentPage = 1;
+  renderedPages.clear();
+  highlights = [];
+  notes = [];
+  renderNotes();
+  renderHighlightsList();
+
+  document.getElementById('drop-zone').classList.add('hidden');
+  document.getElementById('canvas-container').innerHTML = '';
+  updateControls();
+  await renderAllPages();
+  scrollToPage(1);
+}
+
+async function renderAllPages() {
+  const container = document.getElementById('canvas-container');
+  for (let i = 1; i <= totalPages; i++) {
+    await renderPage(i, container);
+  }
+}
+
+async function renderPage(pageNum, container) {
+  const page = await pdfDoc.getPage(pageNum);
+  const viewport = page.getViewport({ scale });
+
+  const wrapper = document.createElement('div');
+  wrapper.className = 'page-wrapper';
+  wrapper.dataset.page = pageNum;
+  wrapper.style.width = viewport.width + 'px';
+  wrapper.style.height = viewport.height + 'px';
+
+  // Canvas layer
+  const canvas = document.createElement('canvas');
+  canvas.width = viewport.width;
+  canvas.height = viewport.height;
+  const ctx = canvas.getContext('2d');
+
+  // Text layer — real selectable spans rendered by PDF.js
+  const textLayerDiv = document.createElement('div');
+  textLayerDiv.className = 'textLayer';
+  textLayerDiv.style.width = viewport.width + 'px';
+  textLayerDiv.style.height = viewport.height + 'px';
+  textLayerDiv.style.setProperty('--scale-factor', viewport.scale);
+
+  // Annotation layer (highlights sit here)
+  const annotLayer = document.createElement('div');
+  annotLayer.className = 'annotation-layer';
+  annotLayer.dataset.page = pageNum;
+
+  wrapper.appendChild(canvas);
+  wrapper.appendChild(textLayerDiv);
+  wrapper.appendChild(annotLayer);
+  container.appendChild(wrapper);
+
+  // Render PDF pixels onto canvas
+  await page.render({ canvasContext: ctx, viewport }).promise;
+
+  // Render selectable text spans via PDF.js TextLayer API
+  const textContent = await page.getTextContent();
+  const textLayer = new pdfjsLib.renderTextLayer({
+    textContentSource: textContent,
+    container: textLayerDiv,
+    viewport,
+    textDivs: [],
+  });
+  await textLayer.promise;
+
+  // Listen for mouseup on the text layer to catch selections
+  textLayerDiv.addEventListener('mouseup', () => {
+    setTimeout(() => {
+      const sel = window.getSelection();
+      const text = sel ? sel.toString().trim() : '';
+      if (text) {
+        selectedText = text;
+        selectedPageNum = pageNum;
+        const range = sel.getRangeAt(0);
+        const rect = range.getBoundingClientRect();
+        showContextMenu(rect.right, rect.bottom + 6);
+      }
+    }, 30);
+  });
+}
+
+// ── SCROLLING / PAGE TRACKER ──
+viewerWrap.addEventListener('scroll', () => {
+  const wrappers = document.querySelectorAll('.page-wrapper');
+  const scrollTop = viewerWrap.scrollTop + viewerWrap.clientHeight / 2;
+  let closest = 1, minDist = Infinity;
+  wrappers.forEach(w => {
+    const top = w.offsetTop;
+    const mid = top + w.offsetHeight / 2;
+    const dist = Math.abs(mid - scrollTop);
+    if (dist < minDist) { minDist = dist; closest = parseInt(w.dataset.page); }
+  });
+  if (closest !== currentPage) {
+    currentPage = closest;
+    document.getElementById('page-info').textContent = `${currentPage} / ${totalPages}`;
+    updateControls();
+  }
+});
+
+function scrollToPage(n) {
+  const wrapper = document.querySelector(`.page-wrapper[data-page="${n}"]`);
+  if (wrapper) wrapper.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function updateControls() {
+  document.getElementById('prev-page').disabled = !pdfDoc || currentPage <= 1;
+  document.getElementById('next-page').disabled = !pdfDoc || currentPage >= totalPages;
+  document.getElementById('zoom-in').disabled = !pdfDoc;
+  document.getElementById('zoom-out').disabled = !pdfDoc;
+  document.getElementById('zoom-fit').disabled = !pdfDoc;
+  document.getElementById('page-info').textContent = pdfDoc ? `${currentPage} / ${totalPages}` : '— / —';
+}
+
+document.getElementById('prev-page').onclick = () => { if (currentPage > 1) scrollToPage(--currentPage); };
+document.getElementById('next-page').onclick = () => { if (currentPage < totalPages) scrollToPage(++currentPage); };
+
+document.getElementById('zoom-in').onclick = async () => {
+  scale = Math.min(scale + 0.25, 3.0);
+  updateZoom();
+  await reRender();
+};
+document.getElementById('zoom-out').onclick = async () => {
+  scale = Math.max(scale - 0.25, 0.5);
+  updateZoom();
+  await reRender();
+};
+document.getElementById('zoom-fit').onclick = async () => {
+  const vw = viewerWrap.clientWidth - 48;
+  const page = await pdfDoc.getPage(1);
+  const vp = page.getViewport({ scale: 1 });
+  scale = Math.round((vw / vp.width) * 100) / 100;
+  updateZoom();
+  await reRender();
+};
+
+function updateZoom() {
+  document.getElementById('zoom-display').textContent = Math.round(scale * 100) + '%';
+}
+
+async function reRender() {
+  const cp = currentPage;
+  document.getElementById('canvas-container').innerHTML = '';
+  await renderAllPages();
+  scrollToPage(cp);
+  redrawHighlights();
+}
+
+// ── CONTEXT MENU ──
+const ctxMenu = document.getElementById('context-menu');
+
+function showContextMenu(x, y) {
+  ctxMenu.style.left = Math.min(x, window.innerWidth - 180) + 'px';
+  ctxMenu.style.top = Math.min(y, window.innerHeight - 160) + 'px';
+  ctxMenu.style.display = 'block';
+}
+
+document.addEventListener('mousedown', (e) => {
+  if (!ctxMenu.contains(e.target)) ctxMenu.style.display = 'none';
+});
+
+function ctxHighlight() {
+  ctxMenu.style.display = 'none';
+  addHighlight(selectedText, selectedPageNum, selectedColor);
+}
+
+function ctxNote() {
+  ctxMenu.style.display = 'none';
+  document.getElementById('note-selected-text').style.display = 'block';
+  document.getElementById('note-selected-text').textContent = `"${selectedText.substring(0, 120)}${selectedText.length > 120 ? '…' : ''}"`;
+  document.getElementById('note-textarea').focus();
+  switchTab('notes');
+}
+
+function ctxDefine() {
+  ctxMenu.style.display = 'none';
+  const word = selectedText.split(/\s+/)[0].replace(/[^a-zA-Z'-]/g, '');
+  if (word) {
+    document.getElementById('dict-input').value = word;
+    switchTab('dictionary');
+    lookupWord();
+  }
+}
+
+function ctxCopy() {
+  ctxMenu.style.display = 'none';
+  navigator.clipboard.writeText(selectedText).catch(() => {});
+}
+
+// ── NOTES ──
+document.getElementById('add-note-btn').addEventListener('click', () => {
+  const text = document.getElementById('note-textarea').value.trim();
+  if (!text) return;
+  notes.unshift({
+    id: Date.now(),
+    page: selectedPageNum || currentPage,
+    quote: document.getElementById('note-selected-text').style.display !== 'none'
+      ? document.getElementById('note-selected-text').textContent : '',
+    text
+  });
+  document.getElementById('note-textarea').value = '';
+  document.getElementById('note-selected-text').style.display = 'none';
+  selectedText = '';
+  renderNotes();
+});
+
+function renderNotes() {
+  const list = document.getElementById('notes-list');
+  if (!notes.length) {
+    list.innerHTML = '<div class="notes-empty">No notes yet.<br>Select text in the PDF,<br>then add a note below.</div>';
+    return;
+  }
+  list.innerHTML = notes.map(n => `
+    <div class="note-card">
+      <div class="note-page">PAGE ${n.page}</div>
+      ${n.quote ? `<div class="note-quote">${n.quote}</div>` : ''}
+      <div class="note-text">${n.text}</div>
+      <button class="note-delete" onclick="deleteNote(${n.id})" title="Delete">✕</button>
+    </div>
+  `).join('');
+}
+
+function deleteNote(id) {
+  notes = notes.filter(n => n.id !== id);
+  renderNotes();
+}
+
+// ── HIGHLIGHTS ──
+function selectColor(color) {
+  selectedColor = color;
+  document.querySelectorAll('.hl-color').forEach(el => el.classList.remove('active'));
+  document.querySelector(`.hl-color[data-color="${color}"]`).classList.add('active');
+}
+
+function getHighlightColor(name) {
+  if (name === 'yellow') return 'rgba(255,220,80,0.45)';
+  if (name === 'blue') return 'rgba(80,160,220,0.4)';
+  if (name === 'green') return 'rgba(80,200,120,0.4)';
+  return 'rgba(255,220,80,0.45)';
+}
+
+async function addHighlight(text, pageNum, color) {
+  if (!text || !pageNum) return;
+  highlights.push({ id: Date.now(), text, page: pageNum, color });
+  renderHighlightsList();
+  await drawHighlightOnPage(text, pageNum, color);
+}
+
+async function drawHighlightOnPage(text, pageNum, color) {
+  const page = await pdfDoc.getPage(pageNum);
+  const viewport = page.getViewport({ scale });
+  const textContent = await page.getTextContent();
+
+  // Find approximate text position
+  const needle = text.toLowerCase().trim();
+  const items = textContent.items;
+  
+  // Try to find matching text items
+  let matchItems = [];
+  let combined = '';
+  let startIdx = -1;
+  
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i];
+    if (!item.str) continue;
+    combined += item.str + ' ';
+    if (combined.toLowerCase().includes(needle) && startIdx === -1) {
+      startIdx = i;
+    }
+    if (startIdx !== -1 && (combined.length - combined.toLowerCase().indexOf(needle)) > needle.length) {
+      matchItems = items.slice(startIdx, i + 1);
+      break;
+    }
+  }
+
+  if (!matchItems.length && items.length) {
+    // Fallback: highlight the area of approximate match
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].str && items[i].str.trim() && text.toLowerCase().includes(items[i].str.toLowerCase().trim())) {
+        matchItems.push(items[i]);
+        if (matchItems.length > 3) break;
+      }
+    }
+  }
+
+  const annotLayer = document.querySelector(`.annotation-layer[data-page="${pageNum}"]`);
+  if (!annotLayer) return;
+
+  matchItems.forEach(item => {
+    if (!item.transform) return;
+    const [scaleX, , , scaleY, tx, ty] = item.transform;
+    const x = tx * scale;
+    const y = viewport.height - ty * scale;
+    const w = (item.width || 50) * scale;
+    const h = Math.abs(scaleY) * scale * 1.4;
+
+    const rect = document.createElement('div');
+    rect.className = 'highlight-rect';
+    rect.style.cssText = `
+      left:${x}px; top:${y - h}px;
+      width:${w}px; height:${h}px;
+      background:${getHighlightColor(color)};
+    `;
+    annotLayer.appendChild(rect);
+  });
+}
+
+function redrawHighlights() {
+  highlights.forEach(h => drawHighlightOnPage(h.text, h.page, h.color));
+}
+
+function renderHighlightsList() {
+  const list = document.getElementById('highlights-list');
+  if (!highlights.length) {
+    list.innerHTML = '<div class="highlights-empty">No highlights yet.<br>Select text and choose<br>"Highlight" from the menu.</div>';
+    return;
+  }
+  list.innerHTML = highlights.map(h => `
+    <div class="hl-card" data-color="${h.color}" onclick="scrollToPage(${h.page})">
+      <div class="hl-page">PAGE ${h.page}</div>
+      "${h.text.substring(0, 100)}${h.text.length > 100 ? '…' : ''}"
+    </div>
+  `).join('');
+}
+
+function clearAllHighlights() {
+  highlights = [];
+  document.querySelectorAll('.annotation-layer').forEach(l => l.innerHTML = '');
+  renderHighlightsList();
+}
+
+// ── DICTIONARY ──
+async function lookupWord() {
+  const word = document.getElementById('dict-input').value.trim();
+  if (!word) return;
+
+  const result = document.getElementById('dict-result');
+  result.innerHTML = '<div class="dict-loading">Looking up "' + word + '"…</div>';
+
+  try {
+    const res = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`);
+    if (!res.ok) throw new Error('Not found');
+    const data = await res.json();
+    renderDictResult(data[0]);
+  } catch {
+    result.innerHTML = `<div class="dict-error">No definition found for "<strong>${word}</strong>".<br>Check spelling or try another word.</div>`;
+  }
+}
+
+function renderDictResult(entry) {
+  const phonetic = entry.phonetics?.find(p => p.text)?.text || '';
+  
+  let html = `
+    <div class="dict-word">${entry.word}</div>
+    ${phonetic ? `<div class="dict-phonetic">${phonetic}</div>` : ''}
+  `;
+
+  (entry.meanings || []).slice(0, 4).forEach(m => {
+    html += `<div class="dict-pos">${m.partOfSpeech}</div>`;
+    (m.definitions || []).slice(0, 3).forEach(d => {
+      html += `<div class="dict-def">${d.definition}</div>`;
+      if (d.example) html += `<div class="dict-example">"${d.example}"</div>`;
+    });
+  });
+
+  document.getElementById('dict-result').innerHTML = html;
+}
+
+// ── TABS ──
+function switchTab(name) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'tab-' + name));
+}
+
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+});
+
+// ── KEYBOARD ──
+document.addEventListener('keydown', e => {
+  if (!pdfDoc) return;
+  if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA') return;
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+    if (currentPage < totalPages) scrollToPage(++currentPage);
+  } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+    if (currentPage > 1) scrollToPage(--currentPage);
+  }
+});
+</script>
+</body>
+</html>
