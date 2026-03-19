@@ -1,2 +1,2 @@
-# tools
+# gadgets
 Various useful tools.
