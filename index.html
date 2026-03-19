@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Eric's Gadgets</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;700&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f4f4f5;
+    --ink: #18181b;
+    --muted: #71717a;
+    --line: #e4e4e7;
+    --accent: #3f3f46;
+    --tile-bg: #ffffff;
+    --tile-hover: #27272a;
+    --tile-hover-text: #fafafa;
+  }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Syne', sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 2rem;
+  }
+
+  /* ── Top-right status bar ── */
+  .status-bar {
+    position: fixed;
+    top: 1.5rem;
+    right: 1.75rem;
+    text-align: right;
+    animation: fadeUp 0.5s ease both;
+    z-index: 10;
+  }
+
+  .status-time {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--ink);
+    letter-spacing: 0.06em;
+  }
+
+  .status-weather {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--muted);
+    margin-top: 0.2rem;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    transition: color 0.15s;
+  }
+  .status-weather:hover { color: var(--ink); }
+
+  /* ── Location popover ── */
+  .loc-popover {
+    display: none;
+    position: fixed;
+    top: 4.2rem;
+    right: 1.75rem;
+    background: var(--tile-bg);
+    border: 1px solid var(--line);
+    padding: 1rem 1.1rem;
+    z-index: 20;
+    animation: fadeUp 0.15s ease both;
+    min-width: 230px;
+  }
+  .loc-popover.open { display: block; }
+
+  .loc-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.62rem;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 0.55rem;
+  }
+
+  .loc-row {
+    display: flex;
+    gap: 0.4rem;
+    align-items: center;
+  }
+
+  .loc-input {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--ink);
+    background: var(--bg);
+    border: 1px solid var(--line);
+    padding: 0.35rem 0.5rem;
+    flex: 1;
+    outline: none;
+    letter-spacing: 0.03em;
+    transition: border-color 0.15s;
+  }
+  .loc-input:focus { border-color: var(--ink); }
+  .loc-input::placeholder { color: var(--muted); }
+
+  .loc-save {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--tile-hover-text);
+    background: var(--ink);
+    border: none;
+    padding: 0.38rem 0.65rem;
+    cursor: pointer;
+    letter-spacing: 0.05em;
+    transition: background 0.15s;
+    white-space: nowrap;
+  }
+  .loc-save:hover { background: var(--accent); }
+
+  .loc-status {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.6rem;
+    color: var(--muted);
+    margin-top: 0.45rem;
+    min-height: 0.9rem;
+    letter-spacing: 0.03em;
+    line-height: 1.5;
+  }
+  .loc-status.err { color: var(--accent); }
+
+  /* ── Header ── */
+  header {
+    text-align: center;
+    margin-bottom: 3.5rem;
+    animation: fadeUp 0.5s ease both;
+  }
+
+  header h1 {
+    font-size: clamp(1.1rem, 2vw, 1.4rem);
+    font-weight: 500;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--ink);
+  }
+
+  header p {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--muted);
+    margin-top: 0.4rem;
+    letter-spacing: 0.08em;
+  }
+
+  .divider {
+    width: 32px;
+    height: 1px;
+    background: var(--accent);
+    margin: 1rem auto;
+  }
+
+  /* ── Grid ── */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 1px;
+    width: 100%;
+    max-width: 780px;
+    background: var(--line);
+    border: 1px solid var(--line);
+  }
+
+  .tile {
+    background: var(--tile-bg);
+    padding: 1.75rem 1.5rem;
+    cursor: pointer;
+    text-decoration: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    position: relative;
+    transition: background 0.18s ease, color 0.18s ease;
+    animation: fadeUp 0.5s ease both;
+    overflow: hidden;
+  }
+
+  .tile:nth-child(1) { animation-delay: 0.05s; }
+  .tile:nth-child(2) { animation-delay: 0.10s; }
+  .tile:nth-child(3) { animation-delay: 0.15s; }
+  .tile:nth-child(4) { animation-delay: 0.20s; }
+  .tile:nth-child(5) { animation-delay: 0.25s; }
+  .tile:nth-child(6) { animation-delay: 0.30s; }
+  .tile:nth-child(7) { animation-delay: 0.35s; }
+  .tile:nth-child(8) { animation-delay: 0.40s; }
+
+  .tile:hover { background: var(--tile-hover); color: var(--tile-hover-text); z-index: 1; }
+  .tile:hover .tile-label { color: var(--tile-hover-text); }
+  .tile:hover .tile-desc  { color: #a1a1aa; }
+  .tile:hover .arrow      { opacity: 1; transform: translate(2px, -2px); }
+
+  .tile-label {
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink);
+    transition: color 0.18s ease;
+    line-height: 1.3;
+  }
+
+  .tile-desc {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.68rem;
+    color: var(--muted);
+    line-height: 1.6;
+    transition: color 0.18s ease;
+    flex: 1;
+  }
+
+  .arrow {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--accent);
+    opacity: 0;
+    transition: opacity 0.18s ease, transform 0.18s ease;
+    align-self: flex-end;
+  }
+
+  footer {
+    margin-top: 2.5rem;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    text-align: center;
+    animation: fadeUp 0.5s 0.5s ease both;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+</style>
+</head>
+<body>
+
+<div class="status-bar">
+  <div class="status-time" id="clock">--:-- --</div>
+  <div class="status-weather" id="weather" title="Click to set location">set location ↗</div>
+</div>
+
+<div class="loc-popover" id="locPopover">
+  <div class="loc-label">Location</div>
+  <div class="loc-row">
+    <input class="loc-input" id="locInput" type="text" placeholder="e.g. Boston" autocomplete="off" spellcheck="false">
+    <button class="loc-save" id="locSave">Save</button>
+  </div>
+  <div class="loc-status" id="locStatus">or enter lat,lon  e.g. 42.36,-71.06</div>
+</div>
+
+<header>
+  <h1>Eric's Gadgets</h1>
+  <div class="divider"></div>
+  <p>Select a gadget to open</p>
+</header>
+
+<div class="grid">
+
+  <a class="tile" href="tab-workspace.html">
+    <div class="tile-label">Tab Workspace</div>
+    <div class="tile-desc">A canvas-based workspace with draggable, tabbed panels. Open multiple browser tabs side-by-side in a free-form layout.</div>
+    <div class="arrow">↗</div>
+  </a>
+
+  <a class="tile" href="pdf-reader.html">
+    <div class="tile-label">PDF Reader</div>
+    <div class="tile-desc">A browser-based PDF reader.</div>
+    <div class="arrow">↗</div>
+  </a>
+
+</div>
+
+<footer>— click any tile to open the gadget —</footer>
+
+<script>
+  /* ── Clock ── */
+  function updateClock() {
+    const now = new Date();
+    let h = now.getHours(), m = now.getMinutes();
+    const ampm = h >= 12 ? 'pm' : 'am';
+    h = h % 12 || 12;
+    document.getElementById('clock').textContent =
+      `${h}:${String(m).padStart(2,'0')} ${ampm}`;
+  }
+  updateClock();
+  setInterval(updateClock, 10000);
+
+  /* ── Weather codes ── */
+  const WMO = {
+    0:'Clear', 1:'Mainly clear', 2:'Partly cloudy', 3:'Overcast',
+    45:'Fog', 48:'Fog', 51:'Drizzle', 53:'Drizzle', 55:'Drizzle',
+    61:'Rain', 63:'Rain', 65:'Heavy rain', 71:'Snow', 73:'Snow',
+    75:'Heavy snow', 77:'Snow grains', 80:'Showers', 81:'Showers',
+    82:'Heavy showers', 85:'Snow showers', 86:'Snow showers',
+    95:'Thunderstorm', 96:'Thunderstorm', 99:'Thunderstorm'
+  };
+
+  async function fetchWeather(lat, lon) {
+    const el = document.getElementById('weather');
+    el.textContent = 'fetching…';
+    try {
+      const res  = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&temperature_unit=fahrenheit`);
+      const data = await res.json();
+      const cw   = data.current_weather;
+      el.textContent = `${Math.round(cw.temperature)}°F  ${WMO[cw.weathercode] || 'Clear'}`;
+    } catch {
+      el.textContent = 'open locally to load weather';
+    }
+  }
+
+  /* ── Offline city lookup ── */
+  const CITIES = {
+    'new york':      [40.71,  -74.01],
+    'nyc':           [40.71,  -74.01],
+    'los angeles':   [34.05,  -118.24],
+    'la':            [34.05,  -118.24],
+    'chicago':       [41.85,  -87.65],
+    'houston':       [29.76,  -95.37],
+    'phoenix':       [33.45,  -112.07],
+    'philadelphia':  [39.95,  -75.17],
+    'philly':        [39.95,  -75.17],
+    'san antonio':   [29.42,  -98.49],
+    'san diego':     [32.72,  -117.16],
+    'dallas':        [32.78,  -96.80],
+    'san francisco': [37.77,  -122.42],
+    'sf':            [37.77,  -122.42],
+    'seattle':       [47.61,  -122.33],
+    'denver':        [39.74,  -104.98],
+    'boston':        [42.36,  -71.06],
+    'cambridge':     [42.37,  -71.10],
+    'austin':        [30.27,  -97.74],
+    'atlanta':       [33.75,  -84.39],
+    'miami':         [25.77,  -80.19],
+    'minneapolis':   [44.98,  -93.27],
+    'portland':      [45.52,  -122.68],
+    'las vegas':     [36.17,  -115.14],
+    'nashville':     [36.17,  -86.78],
+    'charlotte':     [35.23,  -80.84],
+    'raleigh':       [35.78,  -78.64],
+    'detroit':       [42.33,  -83.05],
+    'cleveland':     [41.50,  -81.69],
+    'pittsburgh':    [40.44,  -79.99],
+    'baltimore':     [39.29,  -76.61],
+    'washington':    [38.91,  -77.04],
+    'dc':            [38.91,  -77.04],
+    'london':        [51.51,  -0.13],
+    'paris':         [48.85,  2.35],
+    'berlin':        [52.52,  13.40],
+    'madrid':        [40.42,  -3.70],
+    'rome':          [41.90,  12.50],
+    'amsterdam':     [52.37,  4.90],
+    'barcelona':     [41.39,  2.15],
+    'vienna':        [48.21,  16.37],
+    'stockholm':     [59.33,  18.07],
+    'oslo':          [59.91,  10.75],
+    'zurich':        [47.38,  8.54],
+    'brussels':      [50.85,  4.35],
+    'lisbon':        [38.72,  -9.14],
+    'munich':        [48.14,  11.58],
+    'hamburg':       [53.55,  9.99],
+    'warsaw':        [52.23,  21.01],
+    'prague':        [50.08,  14.44],
+    'budapest':      [47.50,  19.04],
+    'toronto':       [43.65,  -79.38],
+    'vancouver':     [49.25,  -123.12],
+    'montreal':      [45.50,  -73.57],
+    'calgary':       [51.05,  -114.07],
+    'mexico city':   [19.43,  -99.13],
+    'sao paulo':     [-23.55, -46.63],
+    'buenos aires':  [-34.60, -58.38],
+    'bogota':        [4.71,   -74.07],
+    'lima':          [-12.05, -77.04],
+    'santiago':      [-33.46, -70.65],
+    'tokyo':         [35.69,  139.69],
+    'osaka':         [34.69,  135.50],
+    'beijing':       [39.91,  116.39],
+    'shanghai':      [31.23,  121.47],
+    'hong kong':     [22.32,  114.17],
+    'singapore':     [1.35,   103.82],
+    'seoul':         [37.57,  126.98],
+    'taipei':        [25.05,  121.53],
+    'bangkok':       [13.75,  100.52],
+    'jakarta':       [-6.21,  106.85],
+    'sydney':        [-33.87, 151.21],
+    'melbourne':     [-37.81, 144.96],
+    'brisbane':      [-27.47, 153.03],
+    'auckland':      [-36.86, 174.77],
+    'dubai':         [25.20,  55.27],
+    'mumbai':        [19.08,  72.88],
+    'delhi':         [28.66,  77.23],
+    'bangalore':     [12.97,  77.59],
+    'cairo':         [30.06,  31.25],
+    'johannesburg':  [-26.20, 28.04],
+    'nairobi':       [-1.29,  36.82],
+    'lagos':         [6.46,   3.38],
+    'casablanca':    [33.59,  -7.62],
+    'istanbul':      [41.01,  28.95],
+    'moscow':        [55.75,  37.62],
+    'tel aviv':      [32.08,  34.78],
+    'riyadh':        [24.69,  46.72],
+  };
+
+  function resolveLocation(query) {
+    const raw = query.trim();
+
+    // Try lat,lon format: "42.36,-71.06" or "42.36, -71.06"
+    const latlon = raw.split(',').map(s => parseFloat(s.trim()));
+    if (latlon.length === 2 && !isNaN(latlon[0]) && !isNaN(latlon[1]) &&
+        Math.abs(latlon[0]) <= 90 && Math.abs(latlon[1]) <= 180) {
+      return { lat: latlon[0], lon: latlon[1], name: raw };
+    }
+
+    // Strip country suffix like "Boston, US" → "boston"
+    const key = raw.toLowerCase().replace(/,.*$/, '').trim();
+    if (CITIES[key]) {
+      const [lat, lon] = CITIES[key];
+      return { lat, lon, name: raw };
+    }
+
+    return null;
+  }
+
+  /* ── Load saved location ── */
+  function loadLocation() {
+    try {
+      const saved = localStorage.getItem('dashboard_location');
+      if (saved) {
+        const { lat, lon } = JSON.parse(saved);
+        fetchWeather(lat, lon);
+      }
+    } catch (_) {}
+  }
+  loadLocation();
+
+  /* ── Popover ── */
+  const popover   = document.getElementById('locPopover');
+  const locInput  = document.getElementById('locInput');
+  const locSave   = document.getElementById('locSave');
+  const locStatus = document.getElementById('locStatus');
+
+  function setStatus(msg, isErr) {
+    locStatus.textContent = msg;
+    locStatus.className = 'loc-status' + (isErr ? ' err' : '');
+  }
+
+  document.getElementById('weather').addEventListener('click', () => {
+    try {
+      const saved = localStorage.getItem('dashboard_location');
+      if (saved) locInput.value = JSON.parse(saved).name || '';
+    } catch (_) {}
+    popover.classList.toggle('open');
+    if (popover.classList.contains('open')) {
+      locInput.focus();
+      setStatus('or enter lat,lon  e.g. 42.36,-71.06', false);
+    }
+  });
+
+  document.addEventListener('click', e => {
+    if (!popover.contains(e.target) && e.target.id !== 'weather') {
+      popover.classList.remove('open');
+    }
+  });
+
+  locInput.addEventListener('keydown', e => { if (e.key === 'Enter') locSave.click(); });
+
+  locSave.addEventListener('click', () => {
+    const q = locInput.value.trim();
+    if (!q) return;
+    const loc = resolveLocation(q);
+    if (!loc) {
+      setStatus('city not in list — try lat,lon format', true);
+      return;
+    }
+    try {
+      localStorage.setItem('dashboard_location', JSON.stringify(loc));
+    } catch (_) {}
+    setStatus(`saved: ${loc.name}`, false);
+    fetchWeather(loc.lat, loc.lon);
+    setTimeout(() => popover.classList.remove('open'), 800);
+  });
+</script>
+
+</body>
+</html>
