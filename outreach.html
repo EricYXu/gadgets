@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Outreach</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --ink: #0f0e0c;
+    --paper: #f5f2ec;
+    --cream: #ede9df;
+    --rule: #c9c3b4;
+    --rule-light: #dedad2;
+    --accent: #b85c2a;
+    --muted: #7a7366;
+    --serif: 'DM Serif Display', Georgia, serif;
+    --mono: 'DM Mono', 'Courier New', monospace;
+    --courier: 'Courier Prime', monospace;
+  }
+
+  html, body { background: var(--paper); color: var(--ink); font-family: var(--mono); font-size: 13px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+  .app { max-width: 720px; margin: 0 auto; padding: 48px 32px 80px; }
+
+  /* TABS */
+  .tabs { display: flex; border-bottom: 1px solid var(--rule); margin-bottom: 36px; animation: fadeUp 0.4s ease both; }
+  .tab { font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); background: none; border: none; border-bottom: 1px solid transparent; margin-bottom: -1px; padding: 10px 20px; cursor: pointer; transition: color 0.15s, border-color 0.15s; }
+  .tab:first-child { padding-left: 0; }
+  .tab:hover { color: var(--ink); }
+  .tab.active { color: var(--ink); border-bottom-color: var(--ink); }
+  .panel { display: none; animation: fadeUp 0.3s ease both; }
+  .panel.active { display: block; }
+
+  /* FORM */
+  .field { margin-bottom: 24px; }
+  .field label { display: block; font-size: 10px; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+  .field input, .field textarea, .field select { width: 100%; font-family: var(--mono); font-size: 13px; color: var(--ink); background: transparent; border: none; border-bottom: 1px solid var(--rule); border-radius: 0; padding: 8px 0; outline: none; transition: border-color 0.15s; -webkit-appearance: none; appearance: none; }
+  .field input::placeholder, .field textarea::placeholder { color: var(--rule); }
+  .field input:focus, .field textarea:focus, .field select:focus { border-bottom-color: var(--ink); }
+  .field textarea { resize: none; min-height: 80px; }
+  .field select { cursor: pointer; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%237a7366'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 4px center; padding-right: 20px; }
+  .field input[type="number"] { -moz-appearance: textfield; }
+  .field input[type="number"]::-webkit-outer-spin-button,
+  .field input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
+  .row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 32px; }
+  @media (max-width: 560px) { .row, .row3 { grid-template-columns: 1fr; gap: 0; } }
+
+  /* BUTTONS */
+  .btn-run { font-family: var(--mono); font-size: 11px; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink); background: none; border: none; cursor: pointer; padding: 0; display: inline-flex; align-items: center; gap: 8px; margin-top: 8px; transition: opacity 0.15s; }
+  .btn-run::after { content: '→'; transition: transform 0.15s; }
+  .btn-run:hover::after { transform: translateX(4px); }
+  .btn-run:hover { opacity: 0.6; }
+  .btn-action { font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; color: var(--muted); background: none; border: none; cursor: pointer; padding: 0; transition: color 0.15s; }
+  .btn-action:hover { color: var(--ink); }
+  .btn-action.save { color: var(--accent); }
+  .btn-action.save:hover { opacity: 0.7; }
+  .btn-danger { color: var(--rule) !important; }
+  .btn-danger:hover { color: var(--accent) !important; }
+
+  /* LOADER */
+  .loader { display: none; align-items: center; gap: 8px; padding: 16px 0 4px; font-size: 11px; letter-spacing: 0.08em; color: var(--muted); }
+  .loader.show { display: flex; }
+  .dots span { display: inline-block; width: 3px; height: 3px; border-radius: 50%; background: var(--muted); animation: blink 1.2s infinite; margin-right: 2px; }
+  .dots span:nth-child(2) { animation-delay: 0.2s; }
+  .dots span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes blink { 0%,80%,100% { opacity: 0.15; } 40% { opacity: 0.7; } }
+
+  /* DRAFT RESULT */
+  .result { display: none; margin-top: 40px; padding-top: 32px; border-top: 1px solid var(--rule); animation: fadeUp 0.3s ease both; }
+  .result.show { display: block; }
+  .result-label { font-size: 10px; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+  .result-to { font-family: var(--serif); font-size: 1.3rem; color: var(--ink); margin-bottom: 20px; line-height: 1.2; }
+  .result-meta { display: flex; gap: 24px; font-size: 11px; color: var(--muted); margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid var(--rule-light); flex-wrap: wrap; }
+  .result-subject { font-family: var(--courier); font-weight: 700; font-size: 13px; color: var(--ink); margin-bottom: 16px; }
+  .result-body { font-family: var(--courier); font-size: 13px; line-height: 1.9; color: var(--ink); white-space: pre-wrap; }
+  .result-actions { display: flex; gap: 24px; margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--rule-light); flex-wrap: wrap; align-items: center; }
+
+  /* CONTACTS */
+  .contacts { margin-top: 8px; }
+  .contact { padding: 24px 0; border-top: 1px solid var(--rule-light); animation: fadeUp 0.3s ease both; }
+  .contact:last-child { border-bottom: 1px solid var(--rule-light); }
+  .contact-name { font-family: var(--serif); font-size: 1.1rem; color: var(--ink); margin-bottom: 3px; }
+  .contact-role { font-size: 11px; color: var(--muted); letter-spacing: 0.04em; margin-bottom: 10px; }
+  .contact-why { font-size: 12px; color: var(--ink); line-height: 1.7; margin-bottom: 12px; }
+  .contact-actions { display: flex; gap: 20px; }
+
+  /* TIMELINE */
+  .timeline { margin-top: 8px; }
+  .tl-row { display: grid; grid-template-columns: 64px 1fr; gap: 20px; padding: 16px 0; border-top: 1px solid var(--rule-light); }
+  .tl-row:last-child { border-bottom: 1px solid var(--rule-light); }
+  .tl-day { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); padding-top: 2px; }
+  .tl-title { font-size: 13px; font-weight: 500; color: var(--ink); margin-bottom: 4px; }
+  .tl-note { font-size: 12px; color: var(--muted); line-height: 1.6; }
+  .tl-result-actions { display: flex; gap: 24px; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--rule-light); }
+  .etiquette { margin-top: 28px; padding: 20px 24px; background: var(--cream); border-left: 2px solid var(--accent); }
+  .etiquette-label { font-size: 10px; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); margin-bottom: 8px; }
+  .etiquette p { font-size: 12px; color: var(--ink); line-height: 1.75; }
+
+  /* SAVED TAB */
+  .saved-section { margin-bottom: 48px; }
+  .saved-section-label { font-size: 10px; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; }
+  .empty-state { font-size: 12px; color: var(--rule); padding: 12px 0; font-style: italic; }
+
+  .notes-area { width: 100%; font-family: var(--courier); font-size: 13px; color: var(--ink); background: transparent; border: none; border-bottom: 1px solid var(--rule); border-radius: 0; padding: 8px 0; outline: none; resize: none; min-height: 180px; line-height: 1.85; transition: border-color 0.15s; -webkit-appearance: none; }
+  .notes-area:focus { border-bottom-color: var(--ink); }
+  .notes-area::placeholder { color: var(--rule); font-style: italic; }
+  .notes-saved-msg { font-size: 10px; color: var(--muted); letter-spacing: 0.08em; margin-top: 8px; opacity: 0; transition: opacity 0.3s; }
+  .notes-saved-msg.show { opacity: 1; }
+
+  /* SAVED CARDS — shared */
+  .saved-card { padding: 20px 0; border-top: 1px solid var(--rule-light); }
+  .saved-card:last-child { border-bottom: 1px solid var(--rule-light); }
+  .saved-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; gap: 12px; }
+  .saved-card-title { font-family: var(--serif); font-size: 1rem; color: var(--ink); line-height: 1.2; }
+  .saved-card-date { font-size: 10px; color: var(--muted); letter-spacing: 0.06em; white-space: nowrap; padding-top: 3px; }
+  .saved-card-sub { font-size: 11px; color: var(--muted); margin-bottom: 10px; font-style: italic; }
+  .saved-card-body { font-family: var(--courier); font-size: 12px; color: var(--muted); line-height: 1.65; max-height: 3.3em; overflow: hidden; position: relative; transition: max-height 0.3s ease; }
+  .saved-card-body.expanded { max-height: 1000px; color: var(--ink); }
+  .saved-card-body:not(.expanded)::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 1.2em; background: linear-gradient(transparent, var(--paper)); }
+  .saved-card-actions { display: flex; gap: 20px; margin-top: 12px; flex-wrap: wrap; }
+
+  /* saved contact card — no collapse needed */
+  .saved-contact-card { padding: 20px 0; border-top: 1px solid var(--rule-light); }
+  .saved-contact-card:last-child { border-bottom: 1px solid var(--rule-light); }
+  .saved-contact-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px; gap: 12px; }
+  .saved-contact-name { font-family: var(--serif); font-size: 1rem; color: var(--ink); line-height: 1.2; }
+  .saved-contact-role { font-size: 11px; color: var(--muted); margin-bottom: 8px; }
+  .saved-contact-why { font-size: 12px; color: var(--ink); line-height: 1.65; margin-bottom: 10px; }
+  .saved-contact-actions { display: flex; gap: 20px; }
+
+  /* saved timeline card */
+  .saved-tl-card { padding: 20px 0; border-top: 1px solid var(--rule-light); }
+  .saved-tl-card:last-child { border-bottom: 1px solid var(--rule-light); }
+  .saved-tl-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; gap: 12px; }
+  .saved-tl-title { font-family: var(--serif); font-size: 1rem; color: var(--ink); line-height: 1.2; }
+  .saved-tl-steps { font-size: 12px; line-height: 1.65; }
+  .saved-tl-step { display: flex; gap: 12px; padding: 6px 0; border-top: 1px solid var(--rule-light); }
+  .saved-tl-step:first-child { border-top: none; }
+  .saved-tl-day { font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); min-width: 52px; padding-top: 1px; }
+  .saved-tl-step-title { color: var(--ink); font-weight: 500; margin-bottom: 2px; }
+  .saved-tl-step-note { color: var(--muted); font-size: 11px; }
+  .saved-tl-collapsed .saved-tl-steps { display: none; }
+  .saved-tl-actions { display: flex; gap: 20px; margin-top: 12px; }
+
+  /* TOAST */
+  .toast { position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%) translateY(12px); background: var(--ink); color: var(--paper); font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; padding: 10px 20px; opacity: 0; transition: opacity 0.2s, transform 0.2s; pointer-events: none; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('draft',event)">Draft</button>
+    <button class="tab" onclick="switchTab('source',event)">Find contacts</button>
+    <button class="tab" onclick="switchTab('timeline',event)">Timeline</button>
+    <button class="tab" onclick="switchTab('saved',event)">Saved</button>
+  </div>
+
+  <!-- DRAFT -->
+  <div id="tab-draft" class="panel active">
+    <div class="row">
+      <div class="field"><label>Recipient</label><input id="d-name" type="text" placeholder="Dr. Sarah Chen" /></div>
+      <div class="field"><label>Their role</label><input id="d-role" type="text" placeholder="Professor, MIT" /></div>
+    </div>
+    <div class="field"><label>Your name & affiliation</label><input id="d-sender" type="text" placeholder="Alex Park, Harvard '27" /></div>
+    <div class="row">
+      <div class="field"><label>Email type</label>
+        <select id="d-type">
+          <option value="cold intro">Cold introduction</option>
+          <option value="research inquiry">Research inquiry</option>
+          <option value="mentorship request">Mentorship request</option>
+          <option value="informational interview">Informational interview</option>
+          <option value="collaboration proposal">Collaboration proposal</option>
+          <option value="follow up">Follow-up</option>
+          <option value="thank you">Thank you note</option>
+          <option value="networking">Networking / coffee chat</option>
+        </select>
+      </div>
+      <div class="field"><label>Tone</label>
+        <select id="d-tone">
+          <option value="professional and warm">Professional & warm</option>
+          <option value="formal and respectful">Formal & respectful</option>
+          <option value="concise and direct">Concise & direct</option>
+          <option value="enthusiastic and personable">Enthusiastic & personable</option>
+        </select>
+      </div>
+    </div>
+    <div class="field"><label>Key points</label><textarea id="d-points" placeholder="Why you're reaching out, your background, specific ask, any shared context…"></textarea></div>
+    <div class="field"><label>Specifics (optional)</label><input id="d-context" type="text" placeholder="Their recent paper, your project, a mutual connection…" /></div>
+    <div class="field" id="api-key-field" style="margin-top:8px">
+      <label>Anthropic API key</label>
+      <input id="api-key" type="password" placeholder="sk-ant-api03-…" autocomplete="off" />
+      <div style="font-size:10px;color:var(--muted);margin-top:5px;letter-spacing:0.03em">Saved locally in your browser. Used for all three tools.</div>
+    </div>
+    <button class="btn-run" onclick="draftEmail()">Draft email</button>
+    <div class="loader" id="d-loader"><div class="dots"><span></span><span></span><span></span></div>Drafting…</div>
+    <div class="result" id="d-result">
+      <div class="result-label">Drafted email</div>
+      <div class="result-to" id="d-res-to"></div>
+      <div class="result-meta"><span id="d-res-addr"></span><span id="d-res-type"></span></div>
+      <div class="result-subject" id="d-res-subject"></div>
+      <div class="result-body" id="d-res-body"></div>
+      <div class="result-actions">
+        <button class="btn-action" onclick="copyEmail()">Copy</button>
+        <button class="btn-action" onclick="draftEmail()">Redraft</button>
+        <button class="btn-action" onclick="openInMail()">Open in Mail</button>
+        <button class="btn-action save" onclick="saveDraft()">Save draft</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SOURCE -->
+  <div id="tab-source" class="panel">
+    <div class="field"><label>Your goal</label><textarea id="s-goal" placeholder="e.g. Break into computational biology research, find an ML internship at a startup, get mentorship for a social enterprise…"></textarea></div>
+    <div class="row3">
+      <div class="field"><label>Contact type</label>
+        <select id="s-type">
+          <option value="professors and researchers">Professors & researchers</option>
+          <option value="industry professionals">Industry professionals</option>
+          <option value="startup founders and executives">Startup founders & executives</option>
+          <option value="nonprofit leaders">Nonprofit leaders</option>
+          <option value="mentors and advisors">Mentors & advisors</option>
+          <option value="mixed">Mixed</option>
+        </select>
+      </div>
+      <div class="field"><label>Location / field</label><input id="s-loc" type="text" placeholder="Boston · Neuroscience" /></div>
+      <div class="field"><label>Number of contacts</label><input id="s-count" type="number" min="1" max="20" value="4" placeholder="4" /></div>
+    </div>
+    <div class="field"><label>Your background</label><input id="s-bg" type="text" placeholder="Junior at Harvard, CS + Biology, interested in neuro AI…" /></div>
+    <button class="btn-run" onclick="findContacts()">Find contacts</button>
+    <div class="loader" id="s-loader"><div class="dots"><span></span><span></span><span></span></div>Sourcing…</div>
+    <div class="contacts" id="s-results"></div>
+    <div id="s-save-row" style="display:none; margin-top:20px; padding-top:16px; border-top:1px solid var(--rule-light);">
+      <button class="btn-action save" onclick="saveContactList()">Save this contact list</button>
+    </div>
+  </div>
+
+  <!-- TIMELINE -->
+  <div id="tab-timeline" class="panel">
+    <div class="field"><label>Outreach context</label><textarea id="t-goal" placeholder="e.g. Cold email to a professor asking for research mentorship, end-of-semester deadline…"></textarea></div>
+    <div class="row">
+      <div class="field"><label>Urgency</label>
+        <select id="t-urgency">
+          <option value="flexible">Flexible</option>
+          <option value="moderate - within 3-4 weeks">3–4 weeks</option>
+          <option value="somewhat urgent - within 2 weeks">2 weeks</option>
+          <option value="urgent - within a week">Within a week</option>
+        </select>
+      </div>
+      <div class="field"><label>Relationship</label>
+        <select id="t-rel">
+          <option value="complete stranger - cold outreach">Cold — stranger</option>
+          <option value="met briefly or mutual connection">Met briefly / mutual</option>
+          <option value="professional acquaintance">Acquaintance</option>
+          <option value="existing relationship">Existing relationship</option>
+        </select>
+      </div>
+    </div>
+    <button class="btn-run" onclick="buildTimeline()">Build timeline</button>
+    <div class="loader" id="t-loader"><div class="dots"><span></span><span></span><span></span></div>Planning…</div>
+    <div class="timeline" id="t-result" style="display:none"></div>
+    <div class="etiquette" id="t-tips" style="display:none"><div class="etiquette-label">Etiquette</div><p id="t-tips-text"></p></div>
+    <div id="t-save-row" style="display:none; margin-top:20px; padding-top:16px; border-top:1px solid var(--rule-light);">
+      <button class="btn-action save" onclick="saveTimeline()">Save this timeline</button>
+    </div>
+  </div>
+
+  <!-- SAVED -->
+  <div id="tab-saved" class="panel">
+    <div class="saved-section">
+      <div class="saved-section-label"><span>Notes</span></div>
+      <textarea class="notes-area" id="notes-area" placeholder="Jot anything down — contact research, outreach strategy, reminders, follow-up ideas…" oninput="saveNotes()"></textarea>
+      <div class="notes-saved-msg" id="notes-saved-msg">Saved</div>
+    </div>
+    <div class="saved-section">
+      <div class="saved-section-label">
+        <span>Saved drafts</span>
+        <button class="btn-action btn-danger" onclick="clearStore('drafts')">Clear all</button>
+      </div>
+      <div id="saved-drafts-list"></div>
+    </div>
+    <div class="saved-section">
+      <div class="saved-section-label">
+        <span>Saved contacts</span>
+        <button class="btn-action btn-danger" onclick="clearStore('contacts')">Clear all</button>
+      </div>
+      <div id="saved-contacts-list"></div>
+    </div>
+    <div class="saved-section">
+      <div class="saved-section-label">
+        <span>Saved timelines</span>
+        <button class="btn-action btn-danger" onclick="clearStore('timelines')">Clear all</button>
+      </div>
+      <div id="saved-timelines-list"></div>
+    </div>
+  </div>
+
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+  const WORKER_URL = 'https://gadgets.ericxu2025.workers.dev/';
+  const API_KEY_STORAGE = 'outreach_api_key';
+  const KEYS = { drafts: 'outreach_drafts', contacts: 'outreach_contacts', timelines: 'outreach_timelines', notes: 'outreach_notes' };
+
+  /* ── UTILS ── */
+  function loadApiKey() {
+    const saved = localStorage.getItem(API_KEY_STORAGE);
+    if (saved) document.getElementById('api-key').value = saved;
+  }
+
+  function getApiKey() {
+    const key = document.getElementById('api-key').value.trim();
+    if (key) localStorage.setItem(API_KEY_STORAGE, key);
+    return key;
+  }
+
+  function switchTab(name, e) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    e.target.classList.add('active');
+    document.getElementById('tab-' + name).classList.add('active');
+    if (name === 'saved') renderSaved();
+  }
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2200);
+  }
+  function today() { return new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }); }
+  function load(key) { try { return JSON.parse(localStorage.getItem(KEYS[key]) || '[]'); } catch { return []; } }
+  function save(key, data) { localStorage.setItem(KEYS[key], JSON.stringify(data)); }
+  function clearStore(key) {
+    if (!confirm('Delete all saved ' + key + '?')) return;
+    localStorage.removeItem(KEYS[key]); renderSaved();
+  }
+
+  async function callClaude(prompt) {
+    const apiKey = getApiKey();
+    if (!apiKey) throw new Error('Please enter your Anthropic API key.');
+    const res = await fetch(WORKER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+      body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 1500, messages: [{ role: 'user', content: prompt }] })
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+    return data.content?.[0]?.text || '';
+  }
+
+  /* ── DRAFT ── */
+  async function draftEmail() {
+    const name = document.getElementById('d-name').value.trim();
+    const role = document.getElementById('d-role').value.trim();
+    const sender = document.getElementById('d-sender').value.trim();
+    const type = document.getElementById('d-type').value;
+    const tone = document.getElementById('d-tone').value;
+    const points = document.getElementById('d-points').value.trim();
+    const ctx = document.getElementById('d-context').value.trim();
+    if (!name || !points) { alert('Please fill in recipient and key points.'); return; }
+    const L = document.getElementById('d-loader'), R = document.getElementById('d-result');
+    L.classList.add('show'); R.classList.remove('show');
+    try {
+      const raw = await callClaude(
+        `Draft a ${type} email. Return ONLY valid JSON, no markdown fences.\n` +
+        `Recipient: ${name}${role ? ', ' + role : ''}\nSender: ${sender || 'the writer'}\nType: ${type}\nTone: ${tone}\n` +
+        `Key points: ${points}\n${ctx ? 'Context: ' + ctx : ''}\n` +
+        `JSON format: {"subject":"...","body":"..."}\nBody: polished, under 200 words, real prose, no placeholder brackets.`
+      );
+      const p = JSON.parse(raw.replace(/```json|```/g, '').trim());
+      document.getElementById('d-res-to').textContent = name + (role ? ' · ' + role : '');
+      document.getElementById('d-res-addr').textContent = 'To: ' + name;
+      document.getElementById('d-res-type').textContent = type;
+      document.getElementById('d-res-subject').textContent = 'Subject: ' + p.subject;
+      document.getElementById('d-res-body').textContent = p.body;
+      R.classList.add('show');
+    } catch(e) { alert(e.message || 'Something went wrong. Please try again.'); }
+    L.classList.remove('show');
+  }
+
+  function copyEmail() {
+    const s = document.getElementById('d-res-subject').textContent;
+    const b = document.getElementById('d-res-body').textContent;
+    navigator.clipboard.writeText(s + '\n\n' + b).then(() => {
+      const btn = event.target; btn.textContent = 'Copied';
+      setTimeout(() => btn.textContent = 'Copy', 2000);
+    });
+  }
+  function openInMail() {
+    const s = encodeURIComponent(document.getElementById('d-res-subject').textContent.replace('Subject: ', ''));
+    const b = encodeURIComponent(document.getElementById('d-res-body').textContent);
+    window.location.href = `mailto:?subject=${s}&body=${b}`;
+  }
+  function saveDraft() {
+    const to = document.getElementById('d-res-to').textContent;
+    const subject = document.getElementById('d-res-subject').textContent.replace('Subject: ', '');
+    const body = document.getElementById('d-res-body').textContent;
+    if (!body) return;
+    const drafts = load('drafts');
+    drafts.unshift({ id: Date.now(), to, subject, body, date: today() });
+    save('drafts', drafts); showToast('Draft saved');
+  }
+
+  /* ── CONTACTS ── */
+  let _lastContacts = [];
+
+  async function findContacts() {
+    const goal = document.getElementById('s-goal').value.trim();
+    const type = document.getElementById('s-type').value;
+    const loc = document.getElementById('s-loc').value.trim();
+    const bg = document.getElementById('s-bg').value.trim();
+    const count = Math.min(20, Math.max(1, parseInt(document.getElementById('s-count').value) || 4));
+    if (!goal) { alert('Please describe your goal.'); return; }
+    const L = document.getElementById('s-loader'), G = document.getElementById('s-results');
+    const saveRow = document.getElementById('s-save-row');
+    L.classList.add('show'); G.innerHTML = ''; saveRow.style.display = 'none'; _lastContacts = [];
+    try {
+      const raw = await callClaude(
+        `Suggest exactly ${count} specific contact profiles for this goal. Return ONLY a valid JSON array, no markdown.\n` +
+        `Goal: ${goal}\nContact type: ${type}\nLocation: ${loc || 'flexible'}\nBackground: ${bg || 'not specified'}\n` +
+        `Return exactly ${count} objects: [{"name":"realistic name","role":"specific title and org","reason":"1-2 sentences on why this person and where to find them"}]\n` +
+        `Be specific, diverse, and genuinely useful.`
+      );
+      const contacts = JSON.parse(raw.replace(/```json|```/g, '').trim());
+      _lastContacts = contacts;
+      contacts.forEach(c => {
+        const div = document.createElement('div');
+        div.className = 'contact';
+        div.innerHTML = `
+          <div class="contact-name">${c.name}</div>
+          <div class="contact-role">${c.role}</div>
+          <div class="contact-why">${c.reason}</div>
+          <div class="contact-actions">
+            <button class="btn-action" onclick="prefillDraft(${JSON.stringify(c.name)}, ${JSON.stringify(c.role)})">Draft email →</button>
+          </div>`;
+        G.appendChild(div);
+      });
+      saveRow.style.display = 'block';
+    } catch(e) { G.innerHTML = '<div style="padding:16px 0;font-size:12px;color:var(--muted)">Could not load. Please try again.</div>'; }
+    L.classList.remove('show');
+  }
+
+  function saveContactList() {
+    if (!_lastContacts.length) return;
+    const goal = document.getElementById('s-goal').value.trim();
+    const lists = load('contacts');
+    lists.unshift({ id: Date.now(), goal: goal || 'Contact list', contacts: _lastContacts, date: today() });
+    save('contacts', lists); showToast('Contacts saved');
+  }
+
+  function prefillDraft(name, role) {
+    document.getElementById('d-name').value = name;
+    document.getElementById('d-role').value = role;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab')[0].classList.add('active');
+    document.getElementById('tab-draft').classList.add('active');
+    document.getElementById('d-points').focus();
+  }
+
+  /* ── TIMELINE ── */
+  let _lastTimeline = null;
+
+  async function buildTimeline() {
+    const goal = document.getElementById('t-goal').value.trim();
+    const urgency = document.getElementById('t-urgency').value;
+    const rel = document.getElementById('t-rel').value;
+    if (!goal) { alert('Please describe your outreach context.'); return; }
+    const L = document.getElementById('t-loader'), C = document.getElementById('t-result');
+    const T = document.getElementById('t-tips'), saveRow = document.getElementById('t-save-row');
+    L.classList.add('show'); C.style.display = 'none'; T.style.display = 'none'; saveRow.style.display = 'none'; _lastTimeline = null;
+    try {
+      const raw = await callClaude(
+        `Create a professional email outreach timeline. Return ONLY valid JSON, no markdown.\n` +
+        `Goal: ${goal}\nUrgency: ${urgency}\nRelationship: ${rel}\n` +
+        `JSON: {"steps":[{"day":"Day 0","title":"...","note":"..."}],"etiquette_tips":"2-3 sentences"}\n` +
+        `4-6 steps, specific timing (Day 0, Day 3-5, etc.), situation-specific tips.`
+      );
+      const tl = JSON.parse(raw.replace(/```json|```/g, '').trim());
+      _lastTimeline = { goal, urgency, rel, steps: tl.steps, etiquette: tl.etiquette_tips || '' };
+      C.innerHTML = tl.steps.map(s => `
+        <div class="tl-row">
+          <div class="tl-day">${s.day}</div>
+          <div><div class="tl-title">${s.title}</div><div class="tl-note">${s.note}</div></div>
+        </div>`).join('');
+      C.style.display = 'block';
+      if (tl.etiquette_tips) { document.getElementById('t-tips-text').textContent = tl.etiquette_tips; T.style.display = 'block'; }
+      saveRow.style.display = 'block';
+    } catch(e) {
+      C.innerHTML = '<div style="padding:16px 0;font-size:12px;color:var(--muted)">Could not load. Please try again.</div>';
+      C.style.display = 'block';
+    }
+    L.classList.remove('show');
+  }
+
+  function saveTimeline() {
+    if (!_lastTimeline) return;
+    const timelines = load('timelines');
+    timelines.unshift({ id: Date.now(), ...(_lastTimeline), date: today() });
+    save('timelines', timelines); showToast('Timeline saved');
+  }
+
+  /* ── NOTES ── */
+  let notesTimer = null;
+  function saveNotes() {
+    clearTimeout(notesTimer);
+    notesTimer = setTimeout(() => {
+      localStorage.setItem(KEYS.notes, document.getElementById('notes-area').value);
+      const msg = document.getElementById('notes-saved-msg');
+      msg.classList.add('show'); setTimeout(() => msg.classList.remove('show'), 1800);
+    }, 600);
+  }
+
+  /* ── RENDER SAVED ── */
+  function renderSaved() {
+    document.getElementById('notes-area').value = localStorage.getItem(KEYS.notes) || '';
+    renderDrafts(); renderContacts(); renderTimelines();
+  }
+
+  function toggleBody(id, prefix) {
+    const body = document.querySelector(`#${prefix}-${id} .saved-card-body`);
+    const btn = document.querySelector(`#${prefix}-${id} .btn-expand`);
+    if (!body) return;
+    body.classList.toggle('expanded');
+    btn.textContent = body.classList.contains('expanded') ? 'Collapse' : 'Expand';
+  }
+
+  /* drafts */
+  function renderDrafts() {
+    const drafts = load('drafts');
+    const list = document.getElementById('saved-drafts-list');
+    if (!drafts.length) { list.innerHTML = '<div class="empty-state">No saved drafts yet.</div>'; return; }
+    list.innerHTML = drafts.map(d => `
+      <div class="saved-card" id="sdraft-${d.id}">
+        <div class="saved-card-header"><div class="saved-card-title">${d.to}</div><div class="saved-card-date">${d.date}</div></div>
+        <div class="saved-card-sub">${d.subject}</div>
+        <div class="saved-card-body">${d.body}</div>
+        <div class="saved-card-actions">
+          <button class="btn-action btn-expand" onclick="toggleBody(${d.id},'sdraft')">Expand</button>
+          <button class="btn-action" onclick="copyDraft(${d.id})">Copy</button>
+          <button class="btn-action" onclick="mailDraft(${d.id})">Open in Mail</button>
+          <button class="btn-action btn-danger" onclick="deleteSaved('drafts',${d.id})">Delete</button>
+        </div>
+      </div>`).join('');
+  }
+  function copyDraft(id) {
+    const d = load('drafts').find(x => x.id === id); if (!d) return;
+    navigator.clipboard.writeText('Subject: ' + d.subject + '\n\n' + d.body).then(() => showToast('Copied'));
+  }
+  function mailDraft(id) {
+    const d = load('drafts').find(x => x.id === id); if (!d) return;
+    window.location.href = `mailto:?subject=${encodeURIComponent(d.subject)}&body=${encodeURIComponent(d.body)}`;
+  }
+
+  /* contacts */
+  function renderContacts() {
+    const lists = load('contacts');
+    const el = document.getElementById('saved-contacts-list');
+    if (!lists.length) { el.innerHTML = '<div class="empty-state">No saved contacts yet.</div>'; return; }
+    el.innerHTML = lists.map(cl => `
+      <div style="padding:20px 0; border-top:1px solid var(--rule-light);">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;gap:12px;">
+          <div style="font-family:var(--serif);font-size:1rem;color:var(--ink);line-height:1.2">${cl.goal}</div>
+          <div style="display:flex;gap:14px;align-items:center;flex-shrink:0">
+            <span style="font-size:10px;color:var(--muted);letter-spacing:0.06em">${cl.date}</span>
+            <button class="btn-action btn-danger" onclick="deleteSaved('contacts',${cl.id})">Delete</button>
+          </div>
+        </div>
+        ${cl.contacts.map(c => `
+          <div class="saved-contact-card" style="border-top:1px solid var(--rule-light);padding:14px 0 0;">
+            <div class="saved-contact-name">${c.name}</div>
+            <div class="saved-contact-role">${c.role}</div>
+            <div class="saved-contact-why">${c.reason}</div>
+            <div class="saved-contact-actions">
+              <button class="btn-action" onclick="prefillDraft(${JSON.stringify(c.name)},${JSON.stringify(c.role)})">Draft email →</button>
+            </div>
+          </div>`).join('')}
+      </div>`).join('');
+  }
+
+  /* timelines */
+  function renderTimelines() {
+    const tls = load('timelines');
+    const el = document.getElementById('saved-timelines-list');
+    if (!tls.length) { el.innerHTML = '<div class="empty-state">No saved timelines yet.</div>'; return; }
+    el.innerHTML = tls.map(tl => `
+      <div class="saved-tl-card saved-tl-collapsed" id="stl-${tl.id}">
+        <div class="saved-tl-header">
+          <div class="saved-tl-title">${tl.goal}</div>
+          <div style="display:flex;gap:14px;align-items:center;flex-shrink:0">
+            <span style="font-size:10px;color:var(--muted);letter-spacing:0.06em">${tl.date}</span>
+            <button class="btn-action btn-expand-tl" onclick="toggleTl(${tl.id})">Expand</button>
+            <button class="btn-action btn-danger" onclick="deleteSaved('timelines',${tl.id})">Delete</button>
+          </div>
+        </div>
+        <div class="saved-tl-steps">
+          ${tl.steps.map(s => `
+            <div class="saved-tl-step">
+              <div class="saved-tl-day">${s.day}</div>
+              <div><div class="saved-tl-step-title">${s.title}</div><div class="saved-tl-step-note">${s.note}</div></div>
+            </div>`).join('')}
+          ${tl.etiquette ? `<div style="margin-top:16px;padding:16px 20px;background:var(--cream);border-left:2px solid var(--accent);font-size:12px;color:var(--ink);line-height:1.7"><span style="font-size:10px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent);display:block;margin-bottom:6px">Etiquette</span>${tl.etiquette}</div>` : ''}
+        </div>
+      </div>`).join('');
+  }
+
+  function toggleTl(id) {
+    const card = document.getElementById('stl-' + id);
+    const btn = card.querySelector('.btn-expand-tl');
+    card.classList.toggle('saved-tl-collapsed');
+    btn.textContent = card.classList.contains('saved-tl-collapsed') ? 'Expand' : 'Collapse';
+  }
+
+  function deleteSaved(key, id) {
+    save(key, load(key).filter(x => x.id !== id)); renderSaved();
+  }
+  loadApiKey();
+</script>
+</body>
+</html>
