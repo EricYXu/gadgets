@@ -34,3 +34,8 @@ Built with Claude.
 A flashcard study tool for creating and reviewing cards with spaced repetition.
 
 Built with Claude: https://claude.ai/share/8a764eb2-3c92-4e6e-bfb8-192c63f58a15
+
+### [career-planner.html](career-planner.html)
+An AI-powered strategic career planner that builds action plans, outreach strategies, and daily schedules for your career goals.
+
+Built with Claude.
