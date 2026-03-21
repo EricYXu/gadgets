@@ -559,6 +559,28 @@
   </div>
 </div>
 
+<!-- ── EDIT CARD MODAL ── -->
+<div class="modal-overlay" id="edit-modal">
+  <div class="modal">
+    <h2>Edit card</h2>
+    <div class="modal-sub" id="edit-modal-sub"></div>
+    <div class="modal-field">
+      <label class="modal-label">Front</label>
+      <input class="field-input" type="text" id="edit-front" style="width:100%"
+        onkeydown="if(event.key==='Enter') document.getElementById('edit-back').focus()" />
+    </div>
+    <div class="modal-field">
+      <label class="modal-label">Back</label>
+      <input class="field-input" type="text" id="edit-back" style="width:100%"
+        onkeydown="if(event.key==='Enter') confirmEdit()" />
+    </div>
+    <div class="modal-btns">
+      <button class="btn btn-outline btn-sm" onclick="closeEditModal()">Cancel</button>
+      <button class="btn btn-accent btn-sm" onclick="confirmEdit()">Save</button>
+    </div>
+  </div>
+</div>
+
 <!-- ── DECK VIEW ── -->
 <input type="file" id="import-file" accept=".json" style="display:none" onchange="importJSON(event)" />
 <div id="deck-view">
@@ -929,6 +951,7 @@
                   <span class="tally-num" id="t-${item.id}">${item.tally}</span>
                   <button class="tally-btn" onclick="inc('${g.id}','${item.id}')">+</button>
                 </div>
+                <button class="del-btn" style="font-size:13px;" onclick="openEditModal('${g.id}','${item.id}')" title="Edit card">✎</button>
                 <button class="del-btn" onclick="deleteItem('${g.id}','${item.id}')">×</button>
               </div>
             `).join('')}
@@ -944,6 +967,33 @@
         </div>
       `;
     }).join('');
+  }
+
+  /* ── EDIT CARD ── */
+  let editCtx = { gid: null, iid: null };
+
+  function openEditModal(gid, iid) {
+    const g = state.groups.find(g => g.id === gid);
+    const item = g.items.find(i => i.id === iid);
+    editCtx = { gid, iid };
+    document.getElementById('edit-modal-sub').textContent = g.name;
+    document.getElementById('edit-front').value = item.front;
+    document.getElementById('edit-back').value = item.back || '';
+    document.getElementById('edit-modal').classList.add('open');
+    setTimeout(() => document.getElementById('edit-front').focus(), 50);
+  }
+
+  function closeEditModal() {
+    document.getElementById('edit-modal').classList.remove('open');
+  }
+
+  function confirmEdit() {
+    const front = document.getElementById('edit-front').value.trim();
+    if (!front) return;
+    const item = itemOf(editCtx.gid, editCtx.iid);
+    item.front = front;
+    item.back  = document.getElementById('edit-back').value.trim();
+    save(); closeEditModal(); render();
   }
 
   /* ── EXPORT / IMPORT ── */
@@ -986,6 +1036,10 @@
 
   document.getElementById('sched-modal').addEventListener('click', e => {
     if (e.target === document.getElementById('sched-modal')) closeSchedModal();
+  });
+
+  document.getElementById('edit-modal').addEventListener('click', e => {
+    if (e.target === document.getElementById('edit-modal')) closeEditModal();
   });
 
   load();
