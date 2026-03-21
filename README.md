@@ -34,3 +34,8 @@ Built with Claude: https://claude.ai/share/60f3741b-572f-4ad3-b20c-ce514153cdcb
 A tool for composing and managing email outreach campaigns and templates.
 
 Built with Claude.
+
+### [flashcards.html](flashcards.html)
+A flashcard study tool for creating and reviewing cards with spaced repetition.
+
+Built with Claude: https://claude.ai/share/8a764eb2-3c92-4e6e-bfb8-192c63f58a15

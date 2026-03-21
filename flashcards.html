@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flashcards</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --ink:         #0f0e0c;
+    --paper:       #f5f2ec;
+    --cream:       #ede9df;
+    --rule:        #c9c3b4;
+    --accent:      #b85c2a;
+    --accent-soft: #f0e0d4;
+    --muted:       #7a7366;
+    --serif:       'DM Serif Display', Georgia, serif;
+    --mono:        'DM Mono', 'Courier New', monospace;
+  }
+
+  html, body {
+    min-height: 100%;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--mono);
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  /* ── DECK VIEW ── */
+  #deck-view {
+    max-width: 660px;
+    margin: 0 auto;
+    padding: 48px 24px 80px;
+  }
+
+  .masthead {
+    margin-bottom: 40px;
+  }
+
+  .masthead h1 {
+    font-family: var(--serif);
+    font-size: 2.6rem;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+    color: var(--ink);
+  }
+
+  .masthead h1 em {
+    font-style: italic;
+    color: var(--accent);
+  }
+
+  .masthead p {
+    color: var(--muted);
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-top: 8px;
+  }
+
+  /* ── ADD GROUP ── */
+  .add-group-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 36px;
+  }
+
+  .field-input {
+    flex: 1;
+    background: var(--cream);
+    border: 1px solid var(--rule);
+    border-radius: 2px;
+    padding: 9px 12px;
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--ink);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  .field-input::placeholder { color: var(--muted); }
+  .field-input:focus { border-color: var(--accent); }
+
+  .btn {
+    background: var(--ink);
+    color: var(--paper);
+    border: none;
+    border-radius: 2px;
+    padding: 9px 18px;
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: opacity 0.15s;
+  }
+
+  .btn:hover { opacity: 0.82; }
+  .btn:active { opacity: 0.65; }
+
+  .btn-outline {
+    background: transparent;
+    color: var(--ink);
+    border: 1px solid var(--rule);
+  }
+
+  .btn-outline:hover { border-color: var(--ink); background: transparent; }
+
+  .btn-accent {
+    background: var(--accent);
+    color: var(--paper);
+    border: none;
+  }
+
+  .btn-sm { padding: 6px 12px; font-size: 11px; }
+
+  /* ── GROUP CARDS ── */
+  .groups { display: flex; flex-direction: column; gap: 20px; }
+
+  .group-card {
+    background: var(--cream);
+    border: 1px solid var(--rule);
+    border-radius: 2px;
+    box-shadow: 3px 3px 0 var(--rule);
+  }
+
+  .group-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 13px 16px;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .group-name {
+    font-family: var(--serif);
+    font-size: 1.1rem;
+    color: var(--ink);
+    flex: 1;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .pill {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    padding: 3px 8px;
+    border-radius: 100px;
+    border: 1px solid var(--rule);
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  .pill-accent {
+    background: var(--accent-soft);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  /* ── ITEMS ── */
+  .items-list { padding: 4px 0; }
+
+  .item-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 16px;
+    border-bottom: 1px solid var(--rule);
+    transition: background 0.1s;
+  }
+
+  .item-row:last-child { border-bottom: none; }
+  .item-row:hover { background: rgba(0,0,0,0.025); }
+
+  .item-front {
+    font-size: 13px;
+    color: var(--ink);
+    flex: 1;
+    min-width: 0;
+  }
+
+  .item-arrow {
+    font-size: 11px;
+    color: var(--rule);
+    flex-shrink: 0;
+  }
+
+  .item-back {
+    font-size: 12px;
+    color: var(--muted);
+    flex: 1.2;
+    min-width: 0;
+    font-style: italic;
+  }
+
+  /* ── TALLY ── */
+  .tally {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+
+  .tally-num {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--muted);
+    min-width: 20px;
+    text-align: center;
+  }
+
+  .tally-btn {
+    width: 20px;
+    height: 20px;
+    border: 1px solid var(--rule);
+    border-radius: 2px;
+    background: transparent;
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: border-color 0.12s, color 0.12s;
+  }
+
+  .tally-btn:hover { border-color: var(--ink); color: var(--ink); }
+
+  .del-btn {
+    background: none;
+    border: none;
+    color: var(--rule);
+    font-size: 16px;
+    cursor: pointer;
+    line-height: 1;
+    padding: 2px 3px;
+    border-radius: 2px;
+    transition: color 0.12s;
+  }
+
+  .del-btn:hover { color: var(--accent); }
+
+  /* ── ADD ITEM ── */
+  .add-item-row {
+    display: flex;
+    gap: 6px;
+    padding: 10px 16px 13px;
+    background: rgba(0,0,0,0.02);
+    border-top: 1px solid var(--rule);
+  }
+
+  .empty-note {
+    padding: 16px;
+    font-size: 12px;
+    color: var(--muted);
+    font-style: italic;
+  }
+
+  /* ── PRACTICE MODE ── */
+  #practice-view {
+    display: none;
+    min-height: 100vh;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 48px 24px;
+    background: var(--paper);
+  }
+
+  #practice-view.active { display: flex; }
+
+  .practice-back {
+    position: fixed;
+    top: 24px;
+    left: 24px;
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    cursor: pointer;
+    background: none;
+    border: none;
+    font-family: var(--mono);
+    padding: 0;
+    transition: color 0.15s;
+  }
+
+  .practice-back:hover { color: var(--ink); }
+
+  .practice-meta {
+    text-align: center;
+    margin-bottom: 32px;
+  }
+
+  .practice-meta .group-label {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 1rem;
+    color: var(--muted);
+  }
+
+  .practice-meta .progress {
+    font-size: 11px;
+    color: var(--rule);
+    letter-spacing: 0.1em;
+    margin-top: 4px;
+  }
+
+  /* ── FLIP CARD ── */
+  .card-scene {
+    perspective: 900px;
+    width: 100%;
+    max-width: 480px;
+    height: 220px;
+    cursor: pointer;
+    margin-bottom: 28px;
+  }
+
+  .card-inner {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    transform-style: preserve-3d;
+    transition: transform 0.45s cubic-bezier(.4,0,.2,1);
+  }
+
+  .card-inner.flipped { transform: rotateY(180deg); }
+
+  .card-face {
+    position: absolute;
+    inset: 0;
+    backface-visibility: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 2rem;
+    background: var(--cream);
+    border: 1px solid var(--rule);
+    border-radius: 2px;
+    box-shadow: 4px 4px 0 var(--rule);
+  }
+
+  .card-face-back { transform: rotateY(180deg); }
+
+  .card-face-label {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--rule);
+    margin-bottom: 14px;
+  }
+
+  .card-face-text {
+    font-family: var(--serif);
+    font-size: 1.5rem;
+    color: var(--ink);
+    line-height: 1.3;
+  }
+
+  .card-face-hint {
+    font-size: 11px;
+    color: var(--rule);
+    margin-top: 14px;
+    letter-spacing: 0.06em;
+  }
+
+  .practice-btns {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  /* ── DUE BANNER ── */
+  #due-banner {
+    display: none;
+    background: var(--accent-soft);
+    border: 1px solid var(--accent);
+    border-radius: 2px;
+    padding: 12px 16px;
+    margin-bottom: 24px;
+    font-size: 13px;
+    color: var(--ink);
+  }
+  #due-banner strong { color: var(--accent); font-weight: 500; }
+  .due-deck-link {
+    display: inline-block;
+    margin-top: 6px;
+    margin-right: 6px;
+    font-size: 11px;
+    background: var(--accent);
+    color: var(--paper);
+    padding: 3px 10px;
+    border-radius: 2px;
+    cursor: pointer;
+    border: none;
+    font-family: var(--mono);
+    letter-spacing: 0.04em;
+  }
+  .due-deck-link:hover { opacity: 0.82; }
+
+  /* ── SCHEDULE MODAL ── */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(15,14,12,0.45);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--paper);
+    border: 1px solid var(--rule);
+    border-radius: 2px;
+    box-shadow: 5px 5px 0 var(--rule);
+    padding: 28px 28px 24px;
+    width: 100%;
+    max-width: 420px;
+    margin: 16px;
+  }
+  .modal h2 {
+    font-family: var(--serif);
+    font-size: 1.3rem;
+    color: var(--ink);
+    margin-bottom: 4px;
+  }
+  .modal-sub { font-size: 11px; color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 20px; }
+  .modal-field { margin-bottom: 14px; }
+  .modal-label { font-size: 11px; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 6px; display: block; }
+  .modal-btns { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }
+
+  /* ── CALENDAR STRIP ── */
+  .cal-section { margin-bottom: 32px; }
+  .cal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .cal-month {
+    font-family: var(--serif);
+    font-size: 1rem;
+    color: var(--ink);
+  }
+  .cal-nav {
+    background: none;
+    border: 1px solid var(--rule);
+    border-radius: 2px;
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 13px;
+    padding: 3px 10px;
+    cursor: pointer;
+    transition: border-color 0.12s, color 0.12s;
+  }
+  .cal-nav:hover { border-color: var(--ink); color: var(--ink); }
+  .cal-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+  }
+  .cal-dow {
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    text-align: center;
+    padding-bottom: 4px;
+  }
+  .cal-day {
+    aspect-ratio: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    border-radius: 2px;
+    border: 1px solid transparent;
+    cursor: default;
+    position: relative;
+    transition: border-color 0.12s, background 0.12s;
+    min-height: 34px;
+  }
+  .cal-day.other-month { color: var(--rule); }
+  .cal-day.today {
+    border-color: var(--accent);
+    color: var(--accent);
+    font-weight: 500;
+  }
+  .cal-day.has-schedule {
+    background: var(--cream);
+    border-color: var(--rule);
+    cursor: pointer;
+  }
+  .cal-day.has-schedule:hover { border-color: var(--ink); }
+  .cal-day.past { opacity: 0.45; }
+  .cal-dot {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--accent);
+    margin-top: 2px;
+    flex-shrink: 0;
+  }
+  .cal-day-num { line-height: 1; }
+
+  /* ── SCHEDULE LIST ── */
+  .schedule-list { margin-top: 14px; display: flex; flex-direction: column; gap: 6px; }
+  .schedule-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    background: var(--cream);
+    border: 1px solid var(--rule);
+    border-radius: 2px;
+    font-size: 12px;
+  }
+  .schedule-date { color: var(--muted); min-width: 72px; font-size: 11px; letter-spacing: 0.04em; }
+  .schedule-name { flex: 1; color: var(--ink); }
+  .schedule-due { color: var(--accent); font-size: 10px; font-weight: 500; letter-spacing: 0.06em; }
+</style>
+</head>
+<body>
+
+<!-- ── DUE TODAY BANNER ── -->
+<div id="due-banner"></div>
+
+<!-- ── SCHEDULE MODAL ── -->
+<div class="modal-overlay" id="sched-modal">
+  <div class="modal">
+    <h2>Schedule practice</h2>
+    <div class="modal-sub" id="sched-modal-sub"></div>
+    <div class="modal-field">
+      <label class="modal-label">Date</label>
+      <input class="field-input" type="date" id="sched-date" style="width:100%" />
+    </div>
+    <div class="modal-field">
+      <label class="modal-label">Note (optional)</label>
+      <input class="field-input" type="text" id="sched-note" placeholder="e.g. before exam, review session…" style="width:100%" />
+    </div>
+    <div class="modal-btns">
+      <button class="btn btn-outline btn-sm" onclick="closeSchedModal()">Cancel</button>
+      <button class="btn btn-accent btn-sm" onclick="confirmSchedule()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── DECK VIEW ── -->
+<input type="file" id="import-file" accept=".json" style="display:none" onchange="importJSON(event)" />
+<div id="deck-view">
+  <div class="add-group-row" style="margin-top:0; padding-top:0;">
+    <input class="field-input" id="new-group-input" type="text" placeholder="New group — e.g. Spanish, Biology, Calculus…" />
+    <button class="btn" onclick="addGroup()">+ Group</button>
+    <button class="btn btn-outline" onclick="exportJSON()" title="Download backup">↓ Export</button>
+    <button class="btn btn-outline" onclick="document.getElementById('import-file').click()" title="Restore from backup">↑ Import</button>
+  </div>
+
+  <!-- Calendar -->
+  <div class="cal-section">
+    <div class="cal-header">
+      <span class="cal-month" id="cal-month-label"></span>
+      <div style="display:flex;gap:6px;">
+        <button class="cal-nav" onclick="calPrev()">←</button>
+        <button class="cal-nav" onclick="calNext()">→</button>
+      </div>
+    </div>
+    <div class="cal-grid" id="cal-grid"></div>
+    <div class="schedule-list" id="schedule-list"></div>
+  </div>
+
+  <div class="groups" id="groups-container"></div>
+</div>
+
+<!-- ── PRACTICE VIEW ── -->
+<div id="practice-view">
+  <button class="practice-back" onclick="closePractice()">← back to decks</button>
+
+  <div class="practice-meta">
+    <div class="group-label" id="prac-group-name"></div>
+    <div class="progress" id="prac-progress"></div>
+  </div>
+
+  <div class="card-scene" onclick="flipCard()">
+    <div class="card-inner" id="card-inner">
+      <div class="card-face card-face-front">
+        <div class="card-face-label">front</div>
+        <div class="card-face-text" id="card-front-text"></div>
+        <div class="card-face-hint">tap to reveal</div>
+      </div>
+      <div class="card-face card-face-back">
+        <div class="card-face-label">back</div>
+        <div class="card-face-text" id="card-back-text"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="practice-btns">
+    <button class="btn btn-outline btn-sm" onclick="prevCard()">← prev</button>
+    <button class="btn btn-accent btn-sm" onclick="markPracticed()">✓ practiced</button>
+    <button class="btn btn-outline btn-sm" onclick="nextCard()">next →</button>
+  </div>
+</div>
+
+<script>
+  /* ── STATE ── */
+  let state = { groups: [], schedules: [] };
+  let prac  = { groupId: null, idx: 0, flipped: false };
+  let calYear, calMonth;
+  let schedModal = { gid: null };
+
+  function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,5); }
+
+  function save() {
+    try { localStorage.setItem('fc_v2', JSON.stringify(state)); } catch(e) {}
+  }
+
+  function load() {
+    try {
+      const d = localStorage.getItem('fc_v2');
+      if (d) state = JSON.parse(d);
+      if (!state.schedules) state.schedules = [];
+    } catch(e) {}
+  }
+
+  /* ── DATE HELPERS ── */
+  function todayStr() {
+    const n = new Date();
+    return n.getFullYear() + '-' + String(n.getMonth()+1).padStart(2,'0') + '-' + String(n.getDate()).padStart(2,'0');
+  }
+
+  function fmtDate(str) {
+    const [y,m,d] = str.split('-');
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return months[+m-1] + ' ' + +d;
+  }
+
+  /* ── GROUPS ── */
+  function addGroup() {
+    const el = document.getElementById('new-group-input');
+    const name = el.value.trim();
+    if (!name) return;
+    state.groups.push({ id: uid(), name, items: [] });
+    el.value = '';
+    save(); render();
+  }
+
+  function deleteGroup(id) {
+    state.groups = state.groups.filter(g => g.id !== id);
+    state.schedules = state.schedules.filter(s => s.gid !== id);
+    save(); render(); renderCal();
+  }
+
+  /* ── ITEMS ── */
+  function addItem(gid) {
+    const f = document.getElementById('f-' + gid);
+    const b = document.getElementById('b-' + gid);
+    const front = f.value.trim();
+    if (!front) return;
+    const g = state.groups.find(g => g.id === gid);
+    g.items.push({ id: uid(), front, back: b.value.trim(), tally: 0 });
+    f.value = ''; b.value = '';
+    save(); render();
+  }
+
+  function deleteItem(gid, iid) {
+    const g = state.groups.find(g => g.id === gid);
+    g.items = g.items.filter(i => i.id !== iid);
+    save(); render();
+  }
+
+  /* ── TALLY ── */
+  function inc(gid, iid) {
+    itemOf(gid, iid).tally++;
+    save();
+    document.getElementById('t-' + iid).textContent = itemOf(gid, iid).tally;
+  }
+
+  function dec(gid, iid) {
+    const item = itemOf(gid, iid);
+    if (item.tally > 0) item.tally--;
+    save();
+    document.getElementById('t-' + iid).textContent = item.tally;
+  }
+
+  function itemOf(gid, iid) {
+    return state.groups.find(g => g.id === gid).items.find(i => i.id === iid);
+  }
+
+  /* ── SCHEDULE ── */
+  function openSchedModal(gid) {
+    const g = state.groups.find(g => g.id === gid);
+    schedModal.gid = gid;
+    document.getElementById('sched-modal-sub').textContent = g.name;
+    document.getElementById('sched-date').value = '';
+    document.getElementById('sched-note').value = '';
+    document.getElementById('sched-modal').classList.add('open');
+  }
+
+  function closeSchedModal() {
+    document.getElementById('sched-modal').classList.remove('open');
+  }
+
+  function confirmSchedule() {
+    const date = document.getElementById('sched-date').value;
+    const note = document.getElementById('sched-note').value.trim();
+    if (!date) return;
+    state.schedules.push({ id: uid(), gid: schedModal.gid, date, note });
+    save(); closeSchedModal(); renderCal(); renderDueBanner();
+  }
+
+  function deleteSchedule(sid) {
+    state.schedules = state.schedules.filter(s => s.id !== sid);
+    save(); renderCal(); renderDueBanner();
+  }
+
+  /* ── DUE BANNER ── */
+  function renderDueBanner() {
+    const today = todayStr();
+    const due = state.schedules.filter(s => s.date === today);
+    const banner = document.getElementById('due-banner');
+    if (!due.length) { banner.style.display = 'none'; return; }
+    const names = due.map(s => {
+      const g = state.groups.find(g => g.id === s.gid);
+      return g ? `<button class="due-deck-link" onclick="startPractice('${g.id}')">${esc(g.name)}</button>` : '';
+    }).join('');
+    banner.style.display = 'block';
+    banner.innerHTML = `<strong>Due today —</strong> ${due.length} deck${due.length > 1 ? 's' : ''} scheduled for practice.<br><div style="margin-top:8px;">${names}</div>`;
+  }
+
+  /* ── CALENDAR ── */
+  function renderCal() {
+    const now = new Date();
+    if (calYear === undefined) { calYear = now.getFullYear(); calMonth = now.getMonth(); }
+    const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    document.getElementById('cal-month-label').textContent = months[calMonth] + ' ' + calYear;
+
+    const today = todayStr();
+    const firstDay = new Date(calYear, calMonth, 1).getDay();
+    const daysInMonth = new Date(calYear, calMonth+1, 0).getDate();
+    const daysInPrev = new Date(calYear, calMonth, 0).getDate();
+
+    const dows = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+    let html = dows.map(d => `<div class="cal-dow">${d}</div>`).join('');
+
+    // prev month padding
+    for (let i = firstDay - 1; i >= 0; i--) {
+      html += `<div class="cal-day other-month"><span class="cal-day-num">${daysInPrev - i}</span></div>`;
+    }
+
+    const schedDateSet = {};
+    state.schedules.forEach(s => {
+      if (!schedDateSet[s.date]) schedDateSet[s.date] = [];
+      const g = state.groups.find(g => g.id === s.gid);
+      if (g) schedDateSet[s.date].push(g.name);
+    });
+
+    for (let d = 1; d <= daysInMonth; d++) {
+      const ds = calYear + '-' + String(calMonth+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
+      const isToday = ds === today;
+      const hasSched = !!schedDateSet[ds];
+      const isPast = ds < today;
+      let cls = 'cal-day';
+      if (isToday) cls += ' today';
+      if (hasSched) cls += ' has-schedule';
+      if (isPast && !isToday) cls += ' past';
+      const dot = hasSched ? '<div class="cal-dot"></div>' : '';
+      const title = hasSched ? `title="${schedDateSet[ds].join(', ')}"` : '';
+      const click = hasSched ? `onclick="showDaySchedules('${ds}')"` : '';
+      html += `<div class="${cls}" ${title} ${click}><span class="cal-day-num">${d}</span>${dot}</div>`;
+    }
+
+    // next month padding
+    const cellsUsed = firstDay + daysInMonth;
+    const remaining = (7 - (cellsUsed % 7)) % 7;
+    for (let d = 1; d <= remaining; d++) {
+      html += `<div class="cal-day other-month"><span class="cal-day-num">${d}</span></div>`;
+    }
+
+    document.getElementById('cal-grid').innerHTML = html;
+    renderScheduleList();
+  }
+
+  function renderScheduleList() {
+    const today = todayStr();
+    const upcoming = state.schedules
+      .filter(s => s.date >= today)
+      .sort((a,b) => a.date.localeCompare(b.date))
+      .slice(0, 8);
+    const sl = document.getElementById('schedule-list');
+    if (!upcoming.length) { sl.innerHTML = ''; return; }
+    sl.innerHTML = upcoming.map(s => {
+      const g = state.groups.find(g => g.id === s.gid);
+      if (!g) return '';
+      const isToday = s.date === today;
+      return `<div class="schedule-item">
+        <span class="schedule-date">${fmtDate(s.date)}</span>
+        <span class="schedule-name">${esc(g.name)}${s.note ? ` <span style="color:var(--muted);font-style:italic;">— ${esc(s.note)}</span>` : ''}</span>
+        ${isToday ? '<span class="schedule-due">today</span>' : ''}
+        <button class="del-btn" onclick="deleteSchedule('${s.id}')" title="Remove">×</button>
+      </div>`;
+    }).join('');
+  }
+
+  function showDaySchedules(dateStr) {
+    const items = state.schedules.filter(s => s.date === dateStr);
+    if (!items.length) return;
+    // scroll to first matching group
+    const g = state.groups.find(g => g.id === items[0].gid);
+    if (g) {
+      const el = document.querySelector(`[data-gid="${g.id}"]`);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }
+
+  function calPrev() {
+    calMonth--;
+    if (calMonth < 0) { calMonth = 11; calYear--; }
+    renderCal();
+  }
+
+  function calNext() {
+    calMonth++;
+    if (calMonth > 11) { calMonth = 0; calYear++; }
+    renderCal();
+  }
+
+  /* ── PRACTICE ── */
+  function startPractice(gid) {
+    const g = state.groups.find(g => g.id === gid);
+    if (!g.items.length) return;
+    prac = { groupId: gid, idx: 0, flipped: false };
+    document.getElementById('deck-view').style.display = 'none';
+    document.getElementById('due-banner').style.display = 'none';
+    document.getElementById('practice-view').classList.add('active');
+    showCard();
+  }
+
+  function closePractice() {
+    document.getElementById('practice-view').classList.remove('active');
+    document.getElementById('deck-view').style.display = '';
+    renderDueBanner();
+    render();
+  }
+
+  function showCard() {
+    const g = state.groups.find(g => g.id === prac.groupId);
+    const item = g.items[prac.idx];
+    document.getElementById('card-front-text').textContent = item.front;
+    document.getElementById('card-back-text').textContent = item.back || '—';
+    document.getElementById('card-inner').classList.remove('flipped');
+    document.getElementById('prac-group-name').textContent = g.name;
+    document.getElementById('prac-progress').textContent = (prac.idx + 1) + ' / ' + g.items.length;
+    prac.flipped = false;
+  }
+
+  function flipCard() {
+    prac.flipped = !prac.flipped;
+    document.getElementById('card-inner').classList.toggle('flipped', prac.flipped);
+  }
+
+  function nextCard() {
+    const g = state.groups.find(g => g.id === prac.groupId);
+    prac.idx = (prac.idx + 1) % g.items.length;
+    showCard();
+  }
+
+  function prevCard() {
+    const g = state.groups.find(g => g.id === prac.groupId);
+    prac.idx = (prac.idx - 1 + g.items.length) % g.items.length;
+    showCard();
+  }
+
+  function markPracticed() {
+    const g = state.groups.find(g => g.id === prac.groupId);
+    const item = g.items[prac.idx];
+    item.tally++;
+    save();
+    nextCard();
+  }
+
+  /* ── RENDER ── */
+  function esc(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function render() {
+    const c = document.getElementById('groups-container');
+    if (!state.groups.length) {
+      c.innerHTML = '<p style="color:var(--muted);font-size:12px;font-style:italic;padding:8px 0;">No groups yet — add one above.</p>';
+      return;
+    }
+    c.innerHTML = state.groups.map(g => {
+      const total = g.items.reduce((s, i) => s + i.tally, 0);
+      const upcomingSched = state.schedules.filter(s => s.gid === g.id && s.date >= todayStr()).sort((a,b)=>a.date.localeCompare(b.date));
+      const nextSched = upcomingSched[0];
+      return `
+        <div class="group-card" data-gid="${g.id}">
+          <div class="group-header">
+            <span class="group-name">${esc(g.name)}</span>
+            ${g.items.length ? `<span class="pill">${g.items.length} card${g.items.length !== 1 ? 's' : ''}</span>` : ''}
+            ${total ? `<span class="pill pill-accent">✓ ${total}</span>` : ''}
+            ${nextSched ? `<span class="pill" style="border-color:var(--accent);color:var(--accent);">${fmtDate(nextSched.date)}</span>` : ''}
+            <button class="btn btn-outline btn-sm" onclick="openSchedModal('${g.id}')" title="Schedule">+ date</button>
+            ${g.items.length ? `<button class="btn btn-accent btn-sm" onclick="startPractice('${g.id}')">Practice</button>` : ''}
+            <button class="del-btn" onclick="deleteGroup('${g.id}')" title="Delete group">×</button>
+          </div>
+          <div class="items-list">
+            ${!g.items.length ? `<div class="empty-note">No cards yet.</div>` : ''}
+            ${g.items.map(item => `
+              <div class="item-row">
+                <span class="item-front">${esc(item.front)}</span>
+                ${item.back ? `<span class="item-arrow">→</span><span class="item-back">${esc(item.back)}</span>` : '<span style="flex:1.2"></span>'}
+                <div class="tally">
+                  <button class="tally-btn" onclick="dec('${g.id}','${item.id}')">−</button>
+                  <span class="tally-num" id="t-${item.id}">${item.tally}</span>
+                  <button class="tally-btn" onclick="inc('${g.id}','${item.id}')">+</button>
+                </div>
+                <button class="del-btn" onclick="deleteItem('${g.id}','${item.id}')">×</button>
+              </div>
+            `).join('')}
+          </div>
+          <div class="add-item-row">
+            <input class="field-input" id="f-${g.id}" type="text" placeholder="Front"
+              onkeydown="if(event.key==='Enter') document.getElementById('b-${g.id}').focus()" />
+            <span style="color:var(--rule);align-self:center;font-size:12px;">→</span>
+            <input class="field-input" id="b-${g.id}" type="text" placeholder="Back (optional)"
+              onkeydown="if(event.key==='Enter') addItem('${g.id}')" />
+            <button class="btn btn-outline btn-sm" onclick="addItem('${g.id}')">Add</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  /* ── EXPORT / IMPORT ── */
+  function exportJSON() {
+    const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    const d = new Date();
+    a.download = 'flashcards-' + d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0') + '.json';
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+  function importJSON(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try {
+        const parsed = JSON.parse(ev.target.result);
+        if (!parsed.groups) throw new Error('Invalid format');
+        state = parsed;
+        if (!state.schedules) state.schedules = [];
+        save();
+        render();
+        renderCal();
+        renderDueBanner();
+      } catch(err) {
+        alert('Could not import — make sure this is a valid flashcards backup file.');
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  }
+
+  /* ── INIT ── */
+  document.getElementById('new-group-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') addGroup();
+  });
+
+  document.getElementById('sched-modal').addEventListener('click', e => {
+    if (e.target === document.getElementById('sched-modal')) closeSchedModal();
+  });
+
+  load();
+  render();
+  renderCal();
+  renderDueBanner();
+</script>
+</body>
+</html>
