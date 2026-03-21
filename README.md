@@ -20,11 +20,6 @@ A browser-based PDF reader.
 
 Built with Claude: https://claude.ai/share/0d790be4-bcba-4674-89a9-ff6718f01287
 
-### [leetcode.html](leetcode.html)
-A LeetCode practice tracker for logging and reviewing coding problem attempts.
-
-Built with Claude: https://claude.ai/share/33046489-7ab2-4f54-8027-bd5ffb355bc0
-
 ### [day-planner.html](day-planner.html)
 An AI-powered daily schedule builder that generates time-blocked plans based on your tasks and preferences.
 
