@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Focus Timer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --ink:         #0f0e0c;
+  --paper:       #f5f2ec;
+  --cream:       #ede9df;
+  --rule:        #c9c3b4;
+  --accent:      #b85c2a;
+  --accent-soft: #f0e0d4;
+  --muted:       #7a7366;
+  --serif:       'DM Serif Display', Georgia, serif;
+  --mono:        'DM Mono', 'Courier New', monospace;
+}
+
+html, body {
+  min-height: 100%;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+#app {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 48px 24px 80px;
+}
+
+.masthead { margin-bottom: 40px; }
+.masthead h1 {
+  font-family: var(--serif);
+  font-size: 2.6rem;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+.masthead h1 em { font-style: italic; color: var(--accent); }
+.masthead p {
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-top: 8px;
+}
+
+/* INPUTS */
+.field-input {
+  background: var(--cream);
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  padding: 9px 12px;
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--ink);
+  outline: none;
+  transition: border-color 0.15s;
+}
+.field-input::placeholder { color: var(--muted); }
+.field-input:focus { border-color: var(--accent); }
+
+.btn {
+  background: var(--ink);
+  color: var(--paper);
+  border: none;
+  border-radius: 2px;
+  padding: 9px 18px;
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 0.15s;
+}
+.btn:hover { opacity: 0.82; }
+.btn:active { opacity: 0.65; }
+.btn-outline {
+  background: transparent;
+  color: var(--ink);
+  border: 1px solid var(--rule);
+}
+.btn-outline:hover { border-color: var(--ink); }
+.btn-accent { background: var(--accent); color: var(--paper); border: none; }
+.btn-sm { padding: 6px 12px; font-size: 11px; }
+
+.del-btn {
+  background: none;
+  border: none;
+  color: var(--rule);
+  font-size: 16px;
+  cursor: pointer;
+  line-height: 1;
+  padding: 2px 4px;
+  border-radius: 2px;
+  transition: color 0.12s;
+}
+.del-btn:hover { color: var(--accent); }
+
+/* SETUP */
+#setup { display: block; }
+
+.col-labels {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 6px;
+  padding: 0 2px;
+}
+.col-labels span {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.col-task { flex: 1; }
+.col-min  { width: 72px; }
+
+#task-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
+
+.task-row { display: flex; gap: 8px; align-items: center; }
+.task-row .field-input.task-name { flex: 1; }
+.task-row .field-input.task-mins { width: 72px; }
+.task-row .unit { font-size: 12px; color: var(--muted); }
+
+.add-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 28px;
+}
+
+/* TRACKER */
+#tracker { display: none; }
+
+.timer-card {
+  background: var(--cream);
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  box-shadow: 4px 4px 0 var(--rule);
+  padding: 28px 28px 24px;
+  margin-bottom: 24px;
+}
+
+.task-label {
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+#current-name {
+  font-family: var(--serif);
+  font-size: 1.6rem;
+  line-height: 1.2;
+  color: var(--ink);
+  margin-bottom: 20px;
+  min-height: 2rem;
+}
+
+#timer-display {
+  font-family: var(--serif);
+  font-size: 5rem;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  color: var(--ink);
+  margin-bottom: 4px;
+  transition: color 0.3s;
+}
+
+#timer-display.warning { color: var(--accent); }
+
+.progress-wrap {
+  height: 3px;
+  background: var(--rule);
+  border-radius: 2px;
+  margin: 16px 0 20px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  background: var(--ink);
+  border-radius: 2px;
+  transition: width 0.6s linear;
+}
+
+.task-fraction {
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 0.06em;
+  margin-bottom: 20px;
+}
+
+.ctrl-row { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* QUEUE */
+.queue { display: flex; flex-direction: column; gap: 4px; }
+
+.queue-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 2px;
+  font-size: 13px;
+  border: 1px solid transparent;
+}
+.queue-item.done {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+.queue-item.active {
+  background: var(--cream);
+  border-color: var(--rule);
+  font-weight: 500;
+}
+.queue-item.pending { color: var(--muted); }
+.queue-dur { font-size: 11px; color: var(--rule); }
+.queue-item.active .queue-dur { color: var(--muted); }
+
+/* DONE */
+#done { display: none; text-align: center; padding: 3rem 0; }
+#done .check {
+  font-family: var(--serif);
+  font-size: 4rem;
+  color: var(--accent);
+  font-style: italic;
+  margin-bottom: 12px;
+}
+#done h2 {
+  font-family: var(--serif);
+  font-size: 1.8rem;
+  margin-bottom: 8px;
+}
+#done p { font-size: 12px; color: var(--muted); margin-bottom: 28px; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <div class="masthead">
+    <h1>Focus <em>Timer</em></h1>
+    <p>Stay on task, one block at a time</p>
+  </div>
+
+  <!-- SETUP VIEW -->
+  <div id="setup">
+    <div class="col-labels">
+      <span class="col-task">Task</span>
+      <span class="col-min">Min</span>
+      <span style="width:28px;"></span>
+    </div>
+    <div id="task-list"></div>
+    <div class="add-row">
+      <button class="btn btn-outline btn-sm" onclick="addRow()">+ Add task</button>
+    </div>
+    <button class="btn btn-accent" onclick="startSession()">Start session →</button>
+  </div>
+
+  <!-- TRACKER VIEW -->
+  <div id="tracker">
+    <div class="timer-card">
+      <div class="task-label">Now working on</div>
+      <div id="current-name"></div>
+      <div id="timer-display">00:00</div>
+      <div class="progress-wrap"><div class="progress-fill" id="prog" style="width:0%"></div></div>
+      <div class="task-fraction" id="fraction"></div>
+      <div class="ctrl-row">
+        <button class="btn btn-outline btn-sm" id="pause-btn" onclick="togglePause()">Pause</button>
+        <button class="btn btn-outline btn-sm" onclick="skipTask()">Skip →</button>
+        <button class="btn btn-outline btn-sm" onclick="resetSession()">Reset</button>
+      </div>
+    </div>
+    <div class="queue" id="queue"></div>
+  </div>
+
+  <!-- DONE VIEW -->
+  <div id="done">
+    <div class="check">✓</div>
+    <h2>Session complete</h2>
+    <p id="done-summary"></p>
+    <button class="btn btn-accent" onclick="resetSession()">New session</button>
+  </div>
+
+</div>
+<script>
+  let tasks = [];
+  let idx = 0, remaining = 0, total = 0;
+  let running = false;
+  let ticker = null;
+
+  function addRow(name, mins) {
+    const row = document.createElement('div');
+    row.className = 'task-row';
+    row.innerHTML = `
+      <input class="field-input task-name" type="text" placeholder="Task name" value="${name||''}" />
+      <input class="field-input task-mins" type="number" min="1" max="999" value="${mins||25}" />
+      <span class="unit">min</span>
+      <button class="del-btn" onclick="this.closest('.task-row').remove()">×</button>`;
+    document.getElementById('task-list').appendChild(row);
+  }
+
+  // default tasks
+  addRow('Deep work', 25);
+  addRow('Email', 10);
+  addRow('Review', 15);
+
+  function startSession() {
+    tasks = [];
+    document.querySelectorAll('#task-list .task-row').forEach(r => {
+      const name = r.querySelector('.task-name').value.trim();
+      const mins = parseInt(r.querySelector('.task-mins').value) || 1;
+      if (name) tasks.push({ name, mins });
+    });
+    if (!tasks.length) return;
+    idx = 0;
+    document.getElementById('setup').style.display = 'none';
+    document.getElementById('tracker').style.display = 'block';
+    loadTask();
+  }
+
+  function loadTask() {
+    if (idx >= tasks.length) { finish(); return; }
+    total = tasks[idx].mins * 60;
+    remaining = total;
+    running = true;
+    document.getElementById('pause-btn').textContent = 'Pause';
+    renderTimer();
+    clearInterval(ticker);
+    ticker = setInterval(tick, 1000);
+  }
+
+  function tick() {
+    if (!running) return;
+    remaining--;
+    if (remaining <= 0) {
+      remaining = 0;
+      renderTimer();
+      clearInterval(ticker);
+      setTimeout(() => { idx++; loadTask(); }, 700);
+    } else {
+      renderTimer();
+    }
+  }
+
+  function renderTimer() {
+    const t = tasks[idx];
+    document.getElementById('current-name').textContent = t.name;
+    const m = Math.floor(remaining / 60);
+    const s = remaining % 60;
+    const el = document.getElementById('timer-display');
+    el.textContent = String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+    el.className = remaining > 0 && remaining <= 60 ? 'warning' : '';
+    const pct = total > 0 ? Math.round(((total - remaining) / total) * 100) : 100;
+    document.getElementById('prog').style.width = pct + '%';
+    document.getElementById('fraction').textContent = 'Task ' + (idx + 1) + ' of ' + tasks.length;
+    renderQueue();
+  }
+
+  function renderQueue() {
+    const q = document.getElementById('queue');
+    q.innerHTML = tasks.map((t, i) => {
+      const cls = i < idx ? 'done' : i === idx ? 'active' : 'pending';
+      return `<div class="queue-item ${cls}"><span>${esc(t.name)}</span><span class="queue-dur">${t.mins} min</span></div>`;
+    }).join('');
+  }
+
+  function togglePause() {
+    running = !running;
+    document.getElementById('pause-btn').textContent = running ? 'Pause' : 'Resume';
+  }
+
+  function skipTask() {
+    clearInterval(ticker);
+    running = false;
+    idx++;
+    loadTask();
+  }
+
+  function resetSession() {
+    clearInterval(ticker);
+    running = false;
+    document.getElementById('tracker').style.display = 'none';
+    document.getElementById('done').style.display = 'none';
+    document.getElementById('setup').style.display = 'block';
+  }
+
+  function finish() {
+    clearInterval(ticker);
+    document.getElementById('tracker').style.display = 'none';
+    const totalMins = tasks.reduce((s, t) => s + t.mins, 0);
+    document.getElementById('done-summary').textContent =
+      tasks.length + ' task' + (tasks.length !== 1 ? 's' : '') + ' · ' + totalMins + ' minutes focused';
+    document.getElementById('done').style.display = 'block';
+  }
+
+  function esc(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+</script>
+</body>
+</html>
