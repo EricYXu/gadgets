@@ -296,6 +296,8 @@ html, body {
   let idx = 0, remaining = 0, total = 0;
   let running = false;
   let ticker = null;
+  let startedAt = null;   // wall-clock ms when current task (or resume) began
+  let elapsed = 0;        // seconds already elapsed before last pause
 
   function addRow(name, mins) {
     const row = document.createElement('div');
@@ -330,24 +332,24 @@ html, body {
   function loadTask() {
     if (idx >= tasks.length) { finish(); return; }
     total = tasks[idx].mins * 60;
+    elapsed = 0;
     remaining = total;
+    startedAt = Date.now();
     running = true;
     document.getElementById('pause-btn').textContent = 'Pause';
-    renderTimer();
     clearInterval(ticker);
-    ticker = setInterval(tick, 1000);
+    ticker = setInterval(tick, 250);
+    renderTimer();
   }
 
   function tick() {
     if (!running) return;
-    remaining--;
+    const wallElapsed = elapsed + Math.floor((Date.now() - startedAt) / 1000);
+    remaining = Math.max(0, total - wallElapsed);
+    renderTimer();
     if (remaining <= 0) {
-      remaining = 0;
-      renderTimer();
       clearInterval(ticker);
       setTimeout(() => { idx++; loadTask(); }, 700);
-    } else {
-      renderTimer();
     }
   }
 
@@ -374,8 +376,15 @@ html, body {
   }
 
   function togglePause() {
-    running = !running;
-    document.getElementById('pause-btn').textContent = running ? 'Pause' : 'Resume';
+    if (running) {
+      elapsed += Math.floor((Date.now() - startedAt) / 1000);
+      running = false;
+      document.getElementById('pause-btn').textContent = 'Resume';
+    } else {
+      startedAt = Date.now();
+      running = true;
+      document.getElementById('pause-btn').textContent = 'Pause';
+    }
   }
 
   function skipTask() {
